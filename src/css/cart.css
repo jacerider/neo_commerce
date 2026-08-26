@@ -29,12 +29,14 @@
 }
 
 /* Empty until an ajax response inserts messages into it; an empty live region
-   must not occupy space or the cart form gains a permanent gap. */
-.neo-commerce-cart-messages:empty {
-  @apply hidden;
-}
+   must not occupy space or the cart form gains a permanent gap.
 
-.form-error-summary:empty {
+   :not(:has(*)) rather than :empty. Both containers are #type container, and
+   the container template prints newlines around {{ children }}, so the div
+   holds a whitespace text node even with nothing in it and :empty never
+   matches. Element children are what actually separate a rendered message
+   from a reserved placeholder. */
+.neo-commerce-cart-messages:not(:has(*)) {
   @apply hidden;
 }
 
@@ -42,6 +44,13 @@
    ramp step, so the summary stays legible in every colour scheme. */
 .form-error-summary {
   @apply mb-4 border border-alert-500 p-4 text-alert-500;
+}
+
+/* After the block above, not before it: :has() takes the specificity of its
+   argument, so :not(:has(*)) adds nothing and only source order decides which
+   of the two rules wins. :empty would have outranked it; this does not. */
+.form-error-summary:not(:has(*)) {
+  @apply hidden;
 }
 
 /* The summary is focused programmatically after a failed submit, so it needs
