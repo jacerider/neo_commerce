@@ -18,6 +18,7 @@ use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Render\RenderContext;
 use Drupal\neo_commerce\Event\AddToCartResponseEvent;
 use Drupal\Tests\commerce_cart\Kernel\CartKernelTestBase;
+use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
 use Drupal\views\Form\ViewsForm;
 use Drupal\views\Form\ViewsFormMainForm;
@@ -391,6 +392,207 @@ class CartResponseBuilderTest extends CartKernelTestBase {
     // No table header left standing over nothing.
     $this->assertStringNotContainsString('A product', $html);
     $this->assertStringNotContainsString('delete-order-item', $html);
+  }
+
+  /**
+   * The refresh covers every configured preset, plus the default.
+   *
+   * The block picker offers every enabled preset with no access filter, so
+   * any of them can be sitting on a page. One command each, and one for the
+   * default, is what makes the refresh reach all of them -- a selector that
+   * matches nothing is a no-op, so covering a preset nobody placed costs a
+   * command and nothing else.
+   */
+  public function testRefreshesEveryConfiguredPresetPlusTheDefault(): void {
+    $this->createRestrictingRole();
+    $this->createPreset('neo_commerce_alpha', 'Alpha', []);
+    $this->createPreset('neo_commerce_beta', 'Beta', [], TRUE);
+
+    $commands = $this->refreshCommands();
+
+    $this->assertCount(3, $commands);
+    $this->assertSame(
+      [
+        '[data-neo-cart=""]',
+        '[data-neo-cart="neo_commerce_alpha"]',
+        '[data-neo-cart="neo_commerce_beta"]',
+      ],
+      array_column($commands, 'selector')
+    );
+  }
+
+  /**
+   * A preset the shopper may not view is refreshed all the same.
+   *
+   * The picker runs for the editor and the refresh for the shopper, so an
+   * editor can pick a preset that some visitors cannot view. Skipping it here
+   * froze that visitor's cart count at whatever it was on page load, with
+   * nothing in the UI saying why.
+   */
+  public function testRefreshesAnUnviewablePreset(): void {
+    $this->createRestrictingRole();
+    $this->createPreset(
+      'neo_commerce_wholesale',
+      'Wholesale',
+      ['cart_label' => 'Quote basket'],
+      TRUE
+    );
+    $repository = $this->container->get('neo_commerce.settings');
+
+    // The fixture is genuinely out of this user's reach...
+    $this->assertArrayNotHasKey(
+      'neo_commerce_wholesale',
+      $repository->getVariations()
+    );
+    $this->assertNull($repository->get('neo_commerce_wholesale'));
+    // ...and the block picker offers it anyway, which is the whole problem.
+    $this->assertArrayHasKey(
+      'neo_commerce_wholesale',
+      $repository->getVariationEntities()
+    );
+
+    $this->assertContains(
+      '[data-neo-cart="neo_commerce_wholesale"]',
+      array_column($this->refreshCommands(), 'selector')
+    );
+  }
+
+  /**
+   * That preset is rebuilt from the active settings, not from itself.
+   *
+   * This is what makes the command above safe to send: the summary builder
+   * resolves a preset under access and falls back when it cannot, so the
+   * first page render already showed the active settings and the refresh
+   * reproduces exactly that. No preset's settings reach a user who may not
+   * view them.
+   */
+  public function testBuildsAnUnviewablePresetFromTheActiveSettings(): void {
+    $this->createRestrictingRole();
+    $this->createPreset(
+      'neo_commerce_wholesale',
+      'Wholesale',
+      ['cart_label' => 'Quote basket'],
+      TRUE
+    );
+
+    $html = $this->refreshedMarkup('neo_commerce_wholesale');
+
+    // 'Cart' is the shipped label; 'Quote basket' is the preset's.
+    $this->assertStringContainsString('aria-label="Cart, 0 items"', $html);
+    $this->assertStringNotContainsString('Quote basket', $html);
+  }
+
+  /**
+   * Every command aims at the attribute its own summary prints.
+   *
+   * `data-neo-cart` is the contract between the component and the response:
+   * the markup advertises the preset it was built from, and the command that
+   * replaces it selects on that value. A command whose selector and payload
+   * disagree replaces nothing.
+   */
+  public function testTargetsEachCommandAtThePrintedCartAttribute(): void {
+    $this->createRestrictingRole();
+    $this->createPreset('neo_commerce_alpha', 'Alpha', []);
+    $this->createPreset('neo_commerce_beta', 'Beta', [], TRUE);
+
+    $targets = [];
+    foreach ($this->refreshCommands() as $command) {
+      $matched = preg_match(
+        '/ data-neo-cart="([^"]*)"/',
+        (string) $command['data'],
+        $matches
+      );
+      $this->assertSame(1, $matched, 'The summary prints the attribute.');
+      $targets[$matches[1]] = $command['selector'];
+    }
+
+    $this->assertSame([
+      '' => '[data-neo-cart=""]',
+      'neo_commerce_alpha' => '[data-neo-cart="neo_commerce_alpha"]',
+      'neo_commerce_beta' => '[data-neo-cart="neo_commerce_beta"]',
+    ], $targets);
+  }
+
+  /**
+   * Builds the cart refresh commands, rendered as the response sends them.
+   *
+   * @return array[]
+   *   The rendered commands.
+   */
+  protected function refreshCommands(): array {
+    $commands = [];
+    $this->inRenderContext(function () use (&$commands): void {
+      $commands = $this->container->get('neo_commerce.cart_response')
+        ->cartRefreshCommands();
+    });
+    return array_map(static fn ($command) => $command->render(), $commands);
+  }
+
+  /**
+   * Returns the markup one refresh command carries.
+   *
+   * @param string $variation
+   *   The variation id the command targets.
+   *
+   * @return string
+   *   The rendered markup.
+   */
+  protected function refreshedMarkup(string $variation): string {
+    $selector = '[data-neo-cart="' . $variation . '"]';
+    foreach ($this->refreshCommands() as $command) {
+      if ($command['selector'] === $selector) {
+        return (string) $command['data'];
+      }
+    }
+    $this->fail('No refresh command targets ' . $selector . '.');
+  }
+
+  /**
+   * Creates the role a restricted preset is limited to.
+   *
+   * Never granted to anyone here, so a preset carrying it is one the current
+   * user cannot view -- while staying enabled, and so still offered by the
+   * block picker.
+   */
+  protected function createRestrictingRole(): void {
+    Role::create(['id' => 'wholesale', 'label' => 'Wholesale'])->save();
+  }
+
+  /**
+   * Creates a neo_commerce settings preset.
+   *
+   * @param string $id
+   *   The variation id.
+   * @param string $label
+   *   The variation label.
+   * @param array $settings
+   *   The settings this preset overrides.
+   * @param bool $restricted
+   *   Whether to hide the preset behind the ungranted role.
+   */
+  protected function createPreset(string $id, string $label, array $settings, bool $restricted = FALSE): void {
+    $values = [
+      'id' => $id,
+      'label' => $label,
+      'plugin' => 'neo_commerce',
+      'settings' => $settings,
+    ];
+    if ($restricted) {
+      $values['visibility'] = [
+        'user_role' => [
+          'id' => 'user_role',
+          'negate' => FALSE,
+          'context_mapping' => [
+            'user' => '@user.current_user_context:current_user',
+          ],
+          'roles' => ['wholesale' => 'wholesale'],
+        ],
+      ];
+    }
+    $this->container->get('entity_type.manager')
+      ->getStorage('neo_settings')
+      ->create($values)
+      ->save();
   }
 
   /**

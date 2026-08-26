@@ -189,11 +189,24 @@ class CartResponseBuilder {
    * command per configured variation covers all of them. A selector matching
    * nothing is a no-op, so the usual single-variation site emits one command.
    *
+   * The variation list is deliberately unfiltered by access. The block picker
+   * offers every enabled variation, and it runs for the editor while this
+   * runs for the shopper -- so filtering here dropped the commands for any
+   * variation the visitor could not view, freezing that cart's count at
+   * whatever it was on page load with nothing in the UI saying why. Sending
+   * the command is safe because CartLazyBuilders::resolveSettings() still
+   * resolves each id under access and falls back to the active settings when
+   * it cannot: an unviewable variation rendered from the active settings on
+   * first load and re-renders from them here, so the refresh reproduces the
+   * initial render and no variation's settings reach a user who may not view
+   * them.
+   *
    * @return \Drupal\Core\Ajax\CommandInterface[]
    *   The replace commands.
    */
   public function cartRefreshCommands(): array {
-    $variations = array_merge([''], array_keys($this->settings->getVariations()));
+    $configured = array_keys($this->settings->getVariations(FALSE));
+    $variations = array_merge([''], $configured);
     $commands = [];
     foreach ($variations as $variation) {
       $commands[] = new ReplaceCommand(
