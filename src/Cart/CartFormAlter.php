@@ -171,7 +171,10 @@ class CartFormAlter {
       // #row_index all come from Commerce and are what its submit handler
       // dispatches on. Only the presentation changes here.
       if ($icon !== '') {
-        $element['#value'] = $this->icon($this->t('@label', ['@label' => $label]), $icon)
+        // Passed straight through rather than wrapped in t(): the wrapper
+        // registered the literal '@label' as its translatable source string
+        // and translated nothing.
+        $element['#value'] = $this->icon($label, $icon)
           ->iconOnly()
           ->render();
       }
@@ -236,12 +239,29 @@ class CartFormAlter {
   /**
    * Form #submit callback; keeps ajax submits on the page.
    *
+   * A trampoline: the Form API serialises this callable into the form cache,
+   * so it has to stay a static with no dependencies of its own. Everything it
+   * would need is injected into the service it hands off to.
+   *
    * @param array $form
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $formState
    *   The form state.
    */
   public static function submit(array &$form, FormStateInterface $formState): void {
+    \Drupal::service('neo_commerce.cart_form')
+      ->onSubmit($form, $formState);
+  }
+
+  /**
+   * Keeps ajax submits on the page.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
+   */
+  public function onSubmit(array &$form, FormStateInterface $formState): void {
     $trigger = $formState->getTriggeringElement();
     // The Checkout button carries #order_id and sets its own redirect to the
     // checkout flow. That redirect is the point of pressing it, so it is the
