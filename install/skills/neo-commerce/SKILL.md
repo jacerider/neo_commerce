@@ -88,8 +88,17 @@ All of it is at `/admin/config/neo/commerce` — button labels, the modal
 preset, icons, the component, the behaviour toggles. Nothing belongs in
 `settings.php` or in code.
 
-Per-context differences are variations (`/admin/config/neo/commerce/variations`),
-and the cart block picks which one it renders with.
+`cart_display` switches the summary between `text` (icon plus "2 items") and
+`badge` (icon with the bare number in a `.badge`, hidden while empty). `.badge`
+is a `neo_base` utility carrying shape only, so the colour is the theme's to
+pick — `neo_toolbar` pairs it with `bg-primary-500 text-primary-500-content`
+and the component follows suit.
+
+Per-placement differences are **presets**
+(`/admin/config/neo/commerce/variations`), picked explicitly by the cart block.
+Conditions are deliberately **off**: with them on, `getActive()` returns the
+first variation that matches, so a preset saved without conditions would
+quietly become the default for every cart on the site.
 
 ### Place the cart
 

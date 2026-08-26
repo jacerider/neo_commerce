@@ -28,8 +28,14 @@ props:
     count_text:
       type: string
       title: 'Item count text'
-      description: 'The count already pluralised and translated, e.g. "3 items". Plain text; style it with wrappers rather than rebuilding it.'
+      description: 'The count already pluralised and translated, e.g. "3 items". Plain text; style it with wrappers rather than rebuilding it. In badge display this is kept for screen readers, because a bare "3" announces nothing useful.'
       examples: ['3 items']
+    display:
+      type: string
+      title: 'Display'
+      description: 'How the count is shown. "text" puts the pluralised count beside the icon; "badge" shows the bare number in a .badge over the icon and hides it while the cart is empty.'
+      enum: [text, badge]
+      examples: [text]
     label:
       type: string
       title: 'Label'

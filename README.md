@@ -50,8 +50,12 @@ Both fail silently, which is why they are called out here and in the twig.
 
 Everything the cart renders is at **Configuration → Neo → Commerce**
 (`/admin/config/neo/commerce`): the button labels, the modal preset, the
-component, and the behaviour toggles. Variations scope any of it by condition,
-and the cart block chooses which variation it renders with.
+component, and the behaviour toggles — including whether the summary shows
+"2 items" beside the icon or the bare number in a badge over it.
+
+Presets hold alternative sets of all of it, and the cart block chooses which
+preset it renders with. They are selected explicitly, never by condition, so
+adding one never changes a cart you did not point at it.
 
 Nothing here belongs in `settings.php` or in code.
 

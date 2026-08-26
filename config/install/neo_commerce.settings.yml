@@ -12,6 +12,7 @@ cart_checkout_label: Checkout
 cart_component: 'neo_commerce:cart_quick'
 cart_label: Cart
 cart_icon: shopping-cart
+cart_display: text
 cart_dropdown: false
 cart_show_if_empty: true
 cart_link_modal: true

@@ -14,6 +14,12 @@ use Drupal\neo_settings\Plugin\SettingsBase;
  * site's copy ("Update Quote Request") into shared code -- both of which
  * meant a site could only change them by forking the module.
  *
+ * Variations are presets, chosen explicitly by id -- the cart block picks
+ * one, and the ajax refresh rebuilds from that same id. Conditions are off
+ * for exactly that reason: with them on, getActive() returns the first
+ * variation that matches, so a preset saved without any conditions would
+ * quietly become the default for every cart on the site.
+ *
  * @Settings(
  *   id = "neo_commerce",
  *   label = @Translation("Commerce"),
@@ -22,7 +28,9 @@ use Drupal\neo_settings\Plugin\SettingsBase;
  *   route = "/admin/config/neo/commerce",
  *   admin_permission = "administer neo_commerce",
  *   variation_allow = true,
- *   variation_conditions = true,
+ *   variation_label = "preset",
+ *   variation_label_plural = "presets",
+ *   variation_conditions = false,
  *   variation_ordering = false,
  * )
  */
@@ -145,6 +153,16 @@ class CommerceSettings extends SettingsBase {
       '#type' => 'neo_icon_select',
       '#title' => $this->t('Icon'),
       '#default_value' => $this->getValue('cart_icon'),
+    ];
+    $form['cart_block']['cart_display'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Display'),
+      '#options' => [
+        'text' => $this->t('Icon and item count text'),
+        'badge' => $this->t('Icon with the count in a badge'),
+      ],
+      '#description' => $this->t('The badge shows the number alone, and is hidden while the cart is empty. Either way the link is still announced as "Cart, 2 items".'),
+      '#default_value' => $this->getValue('cart_display'),
     ];
     $form['cart_block']['cart_dropdown'] = [
       '#type' => 'checkbox',

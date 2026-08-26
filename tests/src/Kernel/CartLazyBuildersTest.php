@@ -134,6 +134,27 @@ class CartLazyBuildersTest extends CartKernelTestBase {
   }
 
   /**
+   * The display mode reaches the component, and defaults to the text form.
+   */
+  public function testDisplayMode(): void {
+    // Created before the first build: the repository caches its variation
+    // list the first time settings are resolved in a request.
+    $this->createVariation('neo_commerce_badge', 'Badge', [
+      'cart_display' => 'badge',
+    ]);
+
+    $this->assertSame('text', $this->lazyBuilders->cartBlock()['#props']['display']);
+
+    $build = $this->lazyBuilders->cartBlock('neo_commerce_badge');
+
+    $this->assertSame('badge', $build['#props']['display']);
+    // The pluralised sentence is still supplied: the badge renders a bare
+    // number, so this is what a screen reader is given instead.
+    $this->assertSame('0 items', $build['#props']['count_text']);
+    $this->assertSame('Cart, 0 items', $build['#props']['link_label']);
+  }
+
+  /**
    * Quantities are summed across every line in the cart.
    */
   public function testCountsQuantities(): void {

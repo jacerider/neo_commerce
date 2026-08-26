@@ -58,6 +58,9 @@ neo_commerce:
     cart_icon:
       type: string
       label: 'Icon'
+    cart_display:
+      type: string
+      label: 'Display'
     cart_dropdown:
       type: boolean
       label: 'Show cart contents in a dropdown'

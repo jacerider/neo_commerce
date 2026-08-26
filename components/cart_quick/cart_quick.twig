@@ -37,14 +37,29 @@
 <div{{ attributes.addClass('cart-block').setAttribute('data-neo-cart', variation) }}>
   {# addClass takes ONE array; extra arguments are silently dropped. #}
   <a{{ link.addClass(['cart-block--link', 'flex', 'items-center', 'gap-2']) }}>
-    {% if icon %}
-      <span class="cart-block--icon shrink-0 text-lg">{{ icon }}</span>
+    {% if display == 'badge' %}
+      {# The badge overhangs the icon, so the icon needs to be the positioning
+         context. `badge` is a neo_base utility and carries shape only — the
+         colour is ours to pick, the same way neo_toolbar does it. #}
+      <span class="cart-block--icon relative inline-flex shrink-0 text-lg">
+        {{ icon }}
+        {% if count > 0 %}
+          <span class="cart-block--badge badge absolute -top-1 -right-2 bg-primary-500 text-primary-500-content" aria-hidden="true">{{ count }}</span>
+        {% endif %}
+      </span>
+      {# The badge reads as a bare "3", which announces nothing on its own, so
+         the real sentence is kept for screen readers. #}
+      <span class="sr-only" aria-live="polite" aria-atomic="true">{{ count_text }}</span>
+    {% else %}
+      {% if icon %}
+        <span class="cart-block--icon shrink-0 text-lg">{{ icon }}</span>
+      {% endif %}
+      <span
+        class="cart-block--count"
+        aria-live="polite"
+        aria-atomic="true"
+      >{{ count_text }}</span>
     {% endif %}
-    <span
-      class="cart-block--count"
-      aria-live="polite"
-      aria-atomic="true"
-    >{{ count_text }}</span>
   </a>
   {% if show_dropdown and content %}
     <div class="cart-block--contents">{{ content }}</div>

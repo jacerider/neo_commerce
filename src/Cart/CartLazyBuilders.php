@@ -143,6 +143,7 @@ class CartLazyBuilders implements TrustedCallbackInterface {
         'variation' => $variation,
         'count' => $count,
         'count_text' => (string) $countText,
+        'display' => (string) $settings->getValue('cart_display'),
         'label' => $label,
         'link_label' => $linkLabel,
         'link_attributes' => $linkAttributes,
