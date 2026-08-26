@@ -25,6 +25,8 @@ services:
     class: Drupal\neo_commerce\Cart\AddToCartFormAlter
     arguments:
       - '@neo_commerce.settings'
+      - '@entity_type.manager'
+      - '@event_dispatcher'
       - '@string_translation'
 
   neo_commerce.cart_form:

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Drupal\neo_commerce\Cart;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\neo_commerce\Event\AddToCartCleanKeysEvent;
 use Drupal\neo_settings\SettingsRepositoryInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Turns Commerce's add to cart form into an ajax submit.
@@ -23,11 +25,17 @@ class AddToCartFormAlter {
    *
    * @param \Drupal\neo_settings\SettingsRepositoryInterface $settings
    *   The neo_commerce settings repository.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
+   * @param \Symfony\Contracts\EventDispatcher\EventDispatcherInterface $eventDispatcher
+   *   The event dispatcher.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $stringTranslation
    *   The string translation service.
    */
   public function __construct(
     protected SettingsRepositoryInterface $settings,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected EventDispatcherInterface $eventDispatcher,
     TranslationInterface $stringTranslation,
   ) {
     $this->stringTranslation = $stringTranslation;
@@ -150,12 +158,29 @@ class AddToCartFormAlter {
   /**
    * Form #validate callback.
    *
+   * A trampoline: the Form API serialises this callable into the form cache,
+   * so it has to stay a static with no dependencies of its own. Everything it
+   * would need is injected into the service it hands off to.
+   *
    * @param array $form
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $formState
    *   The form state.
    */
   public static function validate(array &$form, FormStateInterface $formState): void {
+    \Drupal::service('neo_commerce.add_to_cart')
+      ->onValidate($form, $formState);
+  }
+
+  /**
+   * Cancels the rebuild after a failed validation.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
+   */
+  public function onValidate(array &$form, FormStateInterface $formState): void {
     if ($formState->hasAnyErrors()) {
       // Without this the entity form rebuilds from user input and the ajax
       // response would render a second, differently built copy of the form.
@@ -166,12 +191,27 @@ class AddToCartFormAlter {
   /**
    * Submit callback; empties the form so the shopper can add another.
    *
+   * A trampoline, for the reason given on ::validate().
+   *
    * @param array $form
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $formState
    *   The form state.
    */
   public static function submit(array &$form, FormStateInterface $formState): void {
+    \Drupal::service('neo_commerce.add_to_cart')
+      ->onSubmit($form, $formState);
+  }
+
+  /**
+   * Empties the submitted form so the shopper can add another.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
+   */
+  public function onSubmit(array &$form, FormStateInterface $formState): void {
     if ($formState->hasAnyErrors()) {
       return;
     }
@@ -181,8 +221,9 @@ class AddToCartFormAlter {
     // the cart instead of adding a second.
     /** @var \Drupal\Core\Entity\EntityFormInterface $formObject */
     $formObject = $formState->getFormObject();
+    /** @var \Drupal\commerce_order\Entity\OrderItem $entity */
     $entity = $formObject->getEntity();
-    $storage = \Drupal::entityTypeManager()
+    $storage = $this->entityTypeManager
       ->getStorage($entity->getEntityTypeId());
     $formObject->setEntity($storage->create([
       'type' => $entity->bundle(),
@@ -194,7 +235,7 @@ class AddToCartFormAlter {
     $keys = $formState->getCleanValueKeys();
     $keys[] = 'ajax_page_state';
     $event = new AddToCartCleanKeysEvent($keys, $formState);
-    \Drupal::service('event_dispatcher')
+    $this->eventDispatcher
       ->dispatch($event, AddToCartCleanKeysEvent::EVENT_NAME);
     $keys = $event->getKeys();
 
