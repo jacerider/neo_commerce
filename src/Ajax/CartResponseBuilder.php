@@ -19,6 +19,7 @@ use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\Core\Url;
 use Drupal\neo\Ajax\AjaxRedirectCommand;
 use Drupal\neo_commerce\Cart\CartLazyBuilders;
+use Drupal\neo_commerce\Cart\CartModal;
 use Drupal\neo_commerce\Event\AddToCartResponseEvent;
 use Drupal\neo_commerce\Form\AjaxFormErrors;
 use Drupal\neo_settings\SettingsRepositoryInterface;
@@ -219,17 +220,13 @@ class CartResponseBuilder {
         $redirect = new AjaxRedirectCommand($url);
         // `neo` is the only key neo_modal_ajax_render_alter() reads. The
         // module this replaces sent `exoModal`, named after a framework that
-        // is no longer installed, so every option below was discarded and
-        // the cart opened with the plain dialog preset.
+        // is no longer installed, so every option was discarded and the cart
+        // opened with the plain dialog preset.
+        //
+        // Shared with the cart summary link, so clicking the cart and adding
+        // to it open the same modal.
         $response->addCommand($redirect->setAsModal([
-          'neo' => [
-            'preset' => (string) $settings->getValue('modal_preset'),
-            'title' => (string) $settings->getValue('modal_title'),
-            'icon' => (string) $settings->getValue('modal_icon'),
-            'smartActions' => (bool) $settings->getValue('modal_smart_actions'),
-            'inputFocus' => (bool) $settings->getValue('modal_input_focus'),
-            'scope' => TRUE,
-          ],
+          'neo' => CartModal::options($settings),
         ]));
         break;
 

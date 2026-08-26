@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\neo_commerce\Kernel;
 
 use Drupal\commerce_price\Price;
+use Drupal\Component\Serialization\Json;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_product\Entity\ProductVariationType;
 use Drupal\Tests\commerce_cart\Kernel\CartKernelTestBase;
@@ -79,6 +80,57 @@ class CartLazyBuildersTest extends CartKernelTestBase {
     $this->assertSame('0 items', $build['#props']['count_text']);
     $this->assertSame('', $build['#props']['variation']);
     $this->assertSame('Cart, 0 items', $build['#props']['link_label']);
+  }
+
+  /**
+   * The link is wired to open the cart in a modal, and says so in one place.
+   *
+   * The component prints this bag and nothing else on the anchor, so if the
+   * wiring is missing here the cart navigates away instead of opening.
+   */
+  public function testLinkOpensModal(): void {
+    $build = $this->lazyBuilders->cartBlock();
+    $link = $build['#props']['link_attributes'];
+    $options = Json::decode($link['data-dialog-options']);
+
+    $this->assertContains('use-modal-ajax', $link['class']);
+    $this->assertSame('modal', $link['data-dialog-type']);
+    $this->assertSame('neo_modal_shelf_top', $options['neo']['preset']);
+    // The href stays put as the no-JS fallback.
+    $this->assertSame('/cart', $link['href']);
+    $this->assertContains(
+      'neo_modal/links',
+      $build['#attached']['library']
+    );
+  }
+
+  /**
+   * Turning the modal off leaves a plain link behind.
+   */
+  public function testLinkWithoutModal(): void {
+    $this->createVariation('neo_commerce_plain', 'Plain', [
+      'cart_link_modal' => FALSE,
+    ]);
+
+    $build = $this->lazyBuilders->cartBlock('neo_commerce_plain');
+    $link = $build['#props']['link_attributes'];
+
+    $this->assertArrayNotHasKey('class', $link);
+    $this->assertArrayNotHasKey('data-dialog-type', $link);
+    $this->assertSame('/cart', $link['href']);
+    $this->assertNotContains('neo_modal/links', $build['#attached']['library']);
+  }
+
+  /**
+   * The stylesheet travels with the summary, not with the add to cart form.
+   *
+   * Without this the cart renders unstyled on every page that has no add to
+   * cart form -- which is most of them.
+   */
+  public function testAttachesItsOwnCss(): void {
+    $build = $this->lazyBuilders->cartBlock();
+
+    $this->assertContains('neo_commerce/cart', $build['#attached']['library']);
   }
 
   /**

@@ -36,8 +36,15 @@ slot, or twig, and however many of them there are. Nothing looks up a block
 entity, which is what makes this work on a site that does not build its front
 end from block layout.
 
-If a theme copy of `cart_quick` drops that attribute, the count silently stops
-updating until the next page load.
+## What a theme copy must keep
+
+`cart_quick` is copied into the theme and yours to restyle, with two rules:
+
+- `data-neo-cart` on the outermost element, or the count stops updating.
+- `link_attributes` printed on the link, or clicking the cart navigates to
+  `/cart` instead of opening the shelf.
+
+Both fail silently, which is why they are called out here and in the twig.
 
 ## Settings
 

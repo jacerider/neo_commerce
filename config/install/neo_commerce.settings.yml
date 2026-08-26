@@ -14,6 +14,7 @@ cart_label: Cart
 cart_icon: shopping-cart
 cart_dropdown: false
 cart_show_if_empty: true
+cart_link_modal: true
 modal_preset: neo_modal_shelf_top
 modal_title: 'Shopping cart'
 modal_icon: shopping-cart

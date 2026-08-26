@@ -5,7 +5,7 @@
   standalone every time the cart changes, to be swapped in over the top of
   itself.
 
-  CONTRACT — two things the module depends on:
+  CONTRACT — three things the module depends on:
 
   1. `data-neo-cart="{{ variation }}"` on the OUTERMOST element. Every cart
      refresh is a ReplaceCommand aimed at `[data-neo-cart="…"]`, so this
@@ -14,7 +14,11 @@
      many of them are on the page. Remove it and the count silently stops
      updating until the next full page load.
 
-  2. This markup mints no ids. One page can hold two carts (a desktop header
+  2. `link_attributes` printed on the link. It carries the href, the
+     accessible name, and the use-modal-ajax wiring that opens the cart in a
+     shelf. Drop it and the cart navigates to /cart instead of opening.
+
+  3. This markup mints no ids. One page can hold two carts (a desktop header
      and a mobile one) built from the same variation, and both are replaced by
      the same command with the same HTML — so any id here would be duplicated.
      That is why the link is named with aria-label rather than pointed at a
@@ -26,14 +30,15 @@
   Own this file: it is copied into your theme on install and yours to restyle
   from there. Run `drush cr` after editing.
 #}
+{# link_attributes arrives as a plain array, and only `attributes` is turned
+   into an Attribute for you -- so build this one, defaulting it so a
+   standalone preview of the component still renders. #}
+{% set link = create_attribute(link_attributes ?? {}) %}
 <div{{ attributes.addClass('cart-block').setAttribute('data-neo-cart', variation) }}>
-  <a
-    class="cart-block--link flex items-center gap-2"
-    href="{{ url }}"
-    aria-label="{{ link_label }}"
-  >
+  {# addClass takes ONE array; extra arguments are silently dropped. #}
+  <a{{ link.addClass(['cart-block--link', 'flex', 'items-center', 'gap-2']) }}>
     {% if icon %}
-      <span class="cart-block--icon flex-shrink-0 text-lg">{{ icon }}</span>
+      <span class="cart-block--icon shrink-0 text-lg">{{ icon }}</span>
     {% endif %}
     <span
       class="cart-block--count"

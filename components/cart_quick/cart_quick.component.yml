@@ -35,15 +35,22 @@ props:
       title: 'Label'
       description: 'The configured cart label, e.g. "Cart".'
       examples: ['Cart']
+    link_attributes:
+      type: object
+      title: 'Link attributes'
+      description: 'Everything the cart link needs: its href, its accessible name, and -- when the modal is enabled -- the use-modal-ajax wiring that opens the cart in a shelf instead of navigating. MUST be printed on the link, or clicking the cart leaves the page. Arrives as a plain array; the twig turns it into an Attribute with create_attribute().'
+      examples:
+        - href: /cart
+          aria-label: 'Cart, 3 items'
     link_label:
       type: string
       title: 'Link label'
-      description: 'The accessible name for the link, composed server-side as label plus count. Keep it on the link: without it a screen reader announces only "3 items", which says nothing about where the link goes.'
+      description: 'The accessible name, also present inside link_attributes. Exposed separately for a visible or visually-hidden label; the link itself needs nothing beyond link_attributes.'
       examples: ['Cart, 3 items']
     url:
       type: string
       title: 'Cart URL'
-      description: 'Path to the cart page.'
+      description: 'Path to the cart page. Already the href inside link_attributes -- use this only for a second link, such as one inside the dropdown.'
       examples: ['/cart']
     show_dropdown:
       type: boolean

@@ -64,6 +64,9 @@ neo_commerce:
     cart_show_if_empty:
       type: boolean
       label: 'Show the block when the cart is empty'
+    cart_link_modal:
+      type: boolean
+      label: 'Open the cart in a modal from the cart summary link'
     modal_preset:
       type: string
       label: 'Preset'

@@ -23,7 +23,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  */
 #[Block(
   id: "neo_commerce_cart",
-  admin_label: new TranslatableMarkup('Cart'),
+  admin_label: new TranslatableMarkup('Ajax Cart'),
   category: new TranslatableMarkup('Commerce'),
 )]
 class CartBlock extends CommerceCartBlock {

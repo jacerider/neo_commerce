@@ -163,6 +163,12 @@ class CommerceSettings extends SettingsBase {
       '#group' => $group,
       '#parents' => $parents,
     ];
+    $form['modal']['cart_link_modal'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Open the cart in a modal from the cart summary link'),
+      '#description' => $this->t('Off means the cart summary link navigates to the cart page. The link keeps its href either way, so it still works before the page finishes loading.'),
+      '#default_value' => $this->getValue('cart_link_modal'),
+    ];
     $form['modal']['modal_preset'] = [
       '#type' => 'neo_settings_variation',
       '#title' => $this->t('Preset'),

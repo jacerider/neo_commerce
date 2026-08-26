@@ -102,10 +102,41 @@ class CartLazyBuilders implements TrustedCallbackInterface {
 
     $label = (string) $settings->getValue('cart_label');
     $countText = $this->formatPlural($count, '@count item', '@count items');
+    $linkLabel = (string) $this->t('@label, @items', [
+      '@label' => $label,
+      '@items' => $countText,
+    ]);
+    $url = Url::fromRoute('commerce_cart.page')->toString();
+
+    // The whole anchor is described here so the component prints one thing.
+    // The accessible name is composed rather than wired with aria-describedby
+    // and a minted id: two carts on one page -- desktop and mobile -- would
+    // share that id, and every ajax replace would mint another.
+    //
+    // A plain array, not an Attribute: Alchemist has no shape for
+    // Drupal\Core\Template\Attribute and rejects it as a prop type, so the
+    // twig builds the object with create_attribute().
+    $linkAttributes = [
+      'href' => $url,
+      'aria-label' => $linkLabel,
+    ];
+
+    $libraries = ['neo_commerce/cart'];
+    if ($settings->getValue('cart_link_modal')) {
+      $linkAttributes = CartModal::trigger(
+        $linkAttributes,
+        CartModal::options($settings)
+      );
+      $libraries[] = CartModal::LIBRARY;
+    }
 
     $build = [
       '#type' => 'component',
       '#component' => (string) $settings->getValue('cart_component'),
+      // Attached from here rather than from the block plugin so it covers
+      // both the initial render and every ajax replacement of the summary --
+      // on that path these become add_css/add_js commands.
+      '#attached' => ['library' => $libraries],
       '#props' => [
         // Echoed into a data attribute so the ajax response can find every
         // instance of this cart on the page, whatever placed it.
@@ -113,14 +144,9 @@ class CartLazyBuilders implements TrustedCallbackInterface {
         'count' => $count,
         'count_text' => (string) $countText,
         'label' => $label,
-        // Composed here rather than wired with aria-describedby and a minted
-        // id. Two carts on one page -- desktop and mobile -- would share that
-        // id, and every ajax replace would mint another.
-        'link_label' => (string) $this->t('@label, @items', [
-          '@label' => $label,
-          '@items' => $countText,
-        ]),
-        'url' => Url::fromRoute('commerce_cart.page')->toString(),
+        'link_label' => $linkLabel,
+        'link_attributes' => $linkAttributes,
+        'url' => $url,
         'show_dropdown' => $dropdown && $carts,
       ],
       '#slots' => [

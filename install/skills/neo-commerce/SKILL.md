@@ -33,24 +33,52 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
 - **[components/cart_quick/](web/modules/contrib/neo_commerce/components/cart_quick/)** —
   the cart summary markup, ejected into the front theme on install.
 
-## The one contract that matters
+## The contract that matters
 
-Every cart summary prints the settings variation it was built from as
-`data-neo-cart` on its **outermost** element. A cart change emits one
-`ReplaceCommand` per configured variation, targeting
-`[data-neo-cart="{variation}"]`.
+The `cart_quick` component is copied into the theme and owned by the site from
+then on. Two things in it are load-bearing:
 
-That is why the cart updates whether it was placed by block layout, an
-Alchemist slot or straight from twig, and however many are on the page.
-Nothing looks up a block entity.
+1. **`data-neo-cart="{variation}"` on the outermost element.** A cart change
+   emits one `ReplaceCommand` per configured variation, targeting
+   `[data-neo-cart="{variation}"]`. That is why the cart updates whether it was
+   placed by block layout, an Alchemist slot or straight from twig, and however
+   many are on the page — nothing looks up a block entity. **If the count stops
+   updating, check this attribute first.**
+2. **`link_attributes` printed on the link.** It carries the href, the
+   accessible name, and the `use-modal-ajax` wiring. **If clicking the cart
+   navigates to `/cart` instead of opening the shelf, this is why.**
 
-**If the count stops updating, check that attribute first.** A theme copy of
-`cart_quick` that drops it breaks the refresh silently.
+It arrives as a plain array, so the twig builds the object itself:
 
-The component also mints **no ids** — one page can hold two summaries built
-from the same variation and replaced with identical HTML. That is why the
-link is named with `aria-label` rather than pointed at a count element with
+```twig
+{% set link = create_attribute(link_attributes ?? {}) %}
+<a{{ link.addClass(['cart-block--link', 'flex', 'items-center', 'gap-2']) }}>
+```
+
+`addClass()` takes **one array** — extra string arguments are silently dropped.
+And note the prop is typed `object`, not `Drupal\Core\Template\Attribute`:
+Alchemist has no shape for that class and `drush neo:alchemist:validate`
+rejects it.
+
+The component mints **no ids** — one page can hold two summaries built from the
+same variation and replaced with identical HTML. That is why the link is named
+with `aria-label` rather than pointed at a count element with
 `aria-describedby`.
+
+## Which modal bridge
+
+The cart link uses `use-modal-ajax` + `data-dialog-type="modal"` +
+`data-dialog-options={"neo":{…}}`, bound by `neo_modal/links`. Both it and the
+post-add modal get their options from `CartModal::options()`, so they open the
+same shelf.
+
+The preset travels as a **name** and is resolved server-side by
+`neo_modal_ajax_render_alter()` — do not pre-flatten it through
+`Modal::getValues()` or the preset is lost.
+
+Do **not** reach for `Modal::getTriggerAttributes()` / `applyTo()` here. That is
+the `use-neo-modal` bridge, which reads its content from a sibling `<template>`
+and can neither fetch a URL nor name a preset.
 
 ## Common tasks
 
@@ -112,6 +140,9 @@ foreach (\Drupal::service('neo_commerce.cart_response')->cartRefreshCommands() a
 | Symptom | Look at |
 |---|---|
 | Count never updates | `data-neo-cart` missing from the theme copy's outermost element |
+| Cart link navigates instead of opening | `link_attributes` not printed on the link, or `cart_link_modal` is off |
+| Cart renders unstyled | `neo_commerce/cart` is attached by the lazy builder, not the block — check `CartLazyBuilders::cartBlock()` still sets `#attached` |
+| Link classes vanish | `addClass()` was called with several strings instead of one array |
 | Count updates on some carts only | a variation is configured that no summary was built with |
 | Modal opens with the wrong chrome | `modal_preset` names a `neo_modal` variation that does not exist — unknown presets fall back silently |
 | Button label unchanged | it is `#value` on a `#type => submit`, never `#title` |
