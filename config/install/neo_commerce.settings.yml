@@ -1,0 +1,21 @@
+add_to_cart_ajax: true
+add_to_cart_message: 'Adding to cart...'
+add_to_cart_success: modal
+add_to_cart_error_summary: true
+add_to_cart_guard: true
+cart_form_ajax: true
+cart_quantity_plus_minus: true
+cart_remove_icon: trash
+cart_remove_label: Remove
+cart_update_label: 'Update cart'
+cart_checkout_label: Checkout
+cart_component: 'neo_commerce:cart_quick'
+cart_label: Cart
+cart_icon: shopping-cart
+cart_dropdown: false
+cart_show_if_empty: true
+modal_preset: neo_modal_shelf_top
+modal_title: 'Shopping cart'
+modal_icon: shopping-cart
+modal_smart_actions: true
+modal_input_focus: false

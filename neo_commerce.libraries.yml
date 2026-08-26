@@ -1,0 +1,14 @@
+cart:
+  version: VERSION
+  neo:
+    scope: front
+  css:
+    component:
+      src/css/cart.css: {}
+  js:
+    src/js/cart.ts: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+    - core/drupal.ajax
+    - core/once

@@ -1,0 +1,3 @@
+administer neo_commerce:
+  title: 'Administer Neo Commerce'
+  restrict access: true

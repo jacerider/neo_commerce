@@ -1,0 +1,47 @@
+{#
+  Cart | Quick — the cart summary.
+
+  Rendered by neo_commerce's lazy builder in the page, and rendered again
+  standalone every time the cart changes, to be swapped in over the top of
+  itself.
+
+  CONTRACT — two things the module depends on:
+
+  1. `data-neo-cart="{{ variation }}"` on the OUTERMOST element. Every cart
+     refresh is a ReplaceCommand aimed at `[data-neo-cart="…"]`, so this
+     attribute is how the response finds the summary — whether it was placed
+     by block layout, an Alchemist slot or straight from twig, and however
+     many of them are on the page. Remove it and the count silently stops
+     updating until the next full page load.
+
+  2. This markup mints no ids. One page can hold two carts (a desktop header
+     and a mobile one) built from the same variation, and both are replaced by
+     the same command with the same HTML — so any id here would be duplicated.
+     That is why the link is named with aria-label rather than pointed at a
+     count element with aria-describedby.
+
+  The count carries aria-live="polite" so adding to the cart is announced
+  without stealing focus from the product page.
+
+  Own this file: it is copied into your theme on install and yours to restyle
+  from there. Run `drush cr` after editing.
+#}
+<div{{ attributes.addClass('cart-block').setAttribute('data-neo-cart', variation) }}>
+  <a
+    class="cart-block--link flex items-center gap-2"
+    href="{{ url }}"
+    aria-label="{{ link_label }}"
+  >
+    {% if icon %}
+      <span class="cart-block--icon flex-shrink-0 text-lg">{{ icon }}</span>
+    {% endif %}
+    <span
+      class="cart-block--count"
+      aria-live="polite"
+      aria-atomic="true"
+    >{{ count_text }}</span>
+  </a>
+  {% if show_dropdown and content %}
+    <div class="cart-block--contents">{{ content }}</div>
+  {% endif %}
+</div>

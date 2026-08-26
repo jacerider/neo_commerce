@@ -1,0 +1,61 @@
+/**
+ * @file
+ * Structural styling for the cart summary, cart form and error summary.
+ *
+ * Deliberately thin. The cart summary markup is ejected into the theme and
+ * belongs to the site from that point on, so anything here that is not
+ * load-bearing would just be something to override.
+ */
+
+.cart-block--link {
+  @apply no-underline;
+}
+
+/* The count is replaced wholesale on every cart change. Reserving space stops
+   the header jumping when "1 item" becomes "12 items". */
+.cart-block--count {
+  @apply tabular-nums whitespace-nowrap;
+}
+
+/* Mirrors the disabled state the cart guard toggles on the add to cart
+   button, which sets the property as well as the class so the button is
+   genuinely inert and not merely styled that way. */
+.button--add-to-cart.is-disabled {
+  @apply opacity-50 pointer-events-none;
+}
+
+.neo-commerce-cart-remove {
+  @apply rounded-full;
+}
+
+/* Empty until an ajax response inserts messages into it; an empty live region
+   must not occupy space or the cart form gains a permanent gap. */
+.neo-commerce-cart-messages:empty {
+  @apply hidden;
+}
+
+.form-error-summary:empty {
+  @apply hidden;
+}
+
+/* alert-500 and its contrast-picked -content partner rather than a hand-picked
+   ramp step, so the summary stays legible in every colour scheme. */
+.form-error-summary {
+  @apply mb-4 border border-alert-500 p-4 text-alert-500;
+}
+
+/* The summary is focused programmatically after a failed submit, so it needs
+   a visible focus ring even though it is not otherwise interactive. */
+.form-error-summary:focus-visible {
+  @apply outline-2 outline-offset-2 outline-alert-500;
+}
+
+/* No text-base here: in Neo that is a colour token, not a font size, and it
+   would repaint the heading in the base colour instead of the alert one. */
+.form-error-summary__title {
+  @apply mb-2 font-semibold;
+}
+
+.form-error-summary__list a {
+  @apply underline;
+}

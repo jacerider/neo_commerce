@@ -1,0 +1,92 @@
+neo_commerce.settings:
+  type: neo_commerce
+  mapping:
+    _core:
+      # This only exists for merging configuration; it's not required.
+      requiredKey: false
+      type: _core_config_info
+
+# Required by neo_settings.schema.yml, which resolves a variation's stored
+# settings via `type: neo_settings.settings.[%parent.plugin]`. Without it every
+# neo_commerce variation fails strict config schema validation.
+neo_settings.settings.neo_commerce:
+  type: neo_commerce
+
+neo_commerce:
+  type: mapping
+  label: 'Neo Commerce settings'
+  mapping:
+    add_to_cart_ajax:
+      type: boolean
+      label: 'Submit the add to cart form with ajax'
+    add_to_cart_message:
+      type: label
+      label: 'Submitting message'
+    add_to_cart_success:
+      type: string
+      label: 'On success'
+    add_to_cart_error_summary:
+      type: boolean
+      label: 'Show an error summary above the form'
+    add_to_cart_guard:
+      type: boolean
+      label: 'Disable the button during a variation refresh'
+    cart_form_ajax:
+      type: boolean
+      label: 'Update the cart form with ajax'
+    cart_quantity_plus_minus:
+      type: boolean
+      label: 'Use plus/minus quantity controls'
+    cart_remove_icon:
+      type: string
+      label: 'Remove icon'
+    cart_remove_label:
+      type: label
+      label: 'Remove label'
+    cart_update_label:
+      type: label
+      label: 'Update button label'
+    cart_checkout_label:
+      type: label
+      label: 'Checkout button label'
+    cart_component:
+      type: string
+      label: 'Component'
+    cart_label:
+      type: label
+      label: 'Label'
+    cart_icon:
+      type: string
+      label: 'Icon'
+    cart_dropdown:
+      type: boolean
+      label: 'Show cart contents in a dropdown'
+    cart_show_if_empty:
+      type: boolean
+      label: 'Show the block when the cart is empty'
+    modal_preset:
+      type: string
+      label: 'Preset'
+    modal_title:
+      type: label
+      label: 'Title'
+    modal_icon:
+      type: string
+      label: 'Icon'
+    modal_smart_actions:
+      type: boolean
+      label: 'Smart actions'
+    modal_input_focus:
+      type: boolean
+      label: 'Focus the first input on open'
+
+# The block carries nothing but the variation. Everything else it renders --
+# label, icon, dropdown, empty behaviour -- lives in neo_commerce.settings, so
+# an ajax refresh can rebuild the block from the variation id alone.
+block.settings.neo_commerce_cart:
+  type: block_settings
+  label: 'Neo cart block settings'
+  mapping:
+    variation:
+      type: string
+      label: 'Settings variation'

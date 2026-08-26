@@ -1,0 +1,14 @@
+name: 'Neo | Commerce'
+type: module
+neo: true
+description: 'Ajax cart and Drupal Commerce integration for Neo.'
+package: Neo
+version: 1.0.0
+core_version_requirement: ^11
+dependencies:
+  - neo:neo
+  - neo_settings:neo_settings
+  - neo_modal:neo_modal
+  - neo_alchemist:neo_alchemist
+  - commerce:commerce_cart
+  - commerce:commerce_order

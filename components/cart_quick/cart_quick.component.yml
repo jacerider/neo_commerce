@@ -1,0 +1,59 @@
+$schema: 'https://git.drupalcode.org/project/drupal/-/raw/10.1.x/core/modules/sdc/src/metadata.schema.json'
+name: 'Cart | Quick'
+status: stable
+description: 'The cart summary: an icon, an item count and a link to the cart page. Rendered by neo_commerce''s lazy builder and replaced wholesale whenever the cart changes.'
+# Source template. `neo: false` keeps this module copy out of the component
+# picker; `neo_install: true` has neo_alchemist copy it into the front theme on
+# install, flipping the copy to `neo: true`. The theme copy is the one you
+# restyle. Strip `neo_install` from that copy -- the installer flips `neo` but
+# leaves the key behind, and a stale one trips drush neo:alchemist:validate.
+#
+# This copy stays renderable so a site whose theme copy was deleted still has a
+# working cart.
+neo: false
+neo_install: true
+props:
+  type: object
+  properties:
+    variation:
+      type: string
+      title: 'Settings variation'
+      description: 'The neo_commerce settings variation this summary was built from. MUST be printed as data-neo-cart on the outermost element -- it is the selector every cart refresh targets, so dropping it leaves the count frozen until the next page load.'
+      examples: ['']
+    count:
+      type: integer
+      title: 'Item count'
+      description: 'Total quantity across every cart. Zero when the cart is empty and the block is still shown.'
+      examples: [3]
+    count_text:
+      type: string
+      title: 'Item count text'
+      description: 'The count already pluralised and translated, e.g. "3 items". Plain text; style it with wrappers rather than rebuilding it.'
+      examples: ['3 items']
+    label:
+      type: string
+      title: 'Label'
+      description: 'The configured cart label, e.g. "Cart".'
+      examples: ['Cart']
+    link_label:
+      type: string
+      title: 'Link label'
+      description: 'The accessible name for the link, composed server-side as label plus count. Keep it on the link: without it a screen reader announces only "3 items", which says nothing about where the link goes.'
+      examples: ['Cart, 3 items']
+    url:
+      type: string
+      title: 'Cart URL'
+      description: 'Path to the cart page.'
+      examples: ['/cart']
+    show_dropdown:
+      type: boolean
+      title: 'Show dropdown'
+      description: 'TRUE when the content slot holds the cart contents view.'
+      examples: [false]
+slots:
+  icon:
+    title: 'Icon'
+    description: 'The rendered cart icon.'
+  content:
+    title: 'Contents'
+    description: 'The cart contents view, only when show_dropdown is TRUE.'

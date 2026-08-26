@@ -1,0 +1,58 @@
+services:
+  neo_commerce.settings:
+    parent: neo_settings.repository
+    arguments: ['neo_commerce']
+
+  neo_commerce.cart_lazy_builders:
+    class: Drupal\neo_commerce\Cart\CartLazyBuilders
+    arguments:
+      - '@neo_commerce.settings'
+      - '@commerce_cart.cart_provider'
+      - '@entity_type.manager'
+
+  neo_commerce.cart_response:
+    class: Drupal\neo_commerce\Ajax\CartResponseBuilder
+    arguments:
+      - '@neo_commerce.settings'
+      - '@neo_commerce.cart_lazy_builders'
+      - '@event_dispatcher'
+      - '@messenger'
+      - '@request_stack'
+      - '@entity_type.manager'
+      - '@string_translation'
+
+  neo_commerce.add_to_cart:
+    class: Drupal\neo_commerce\Cart\AddToCartFormAlter
+    arguments:
+      - '@neo_commerce.settings'
+      - '@string_translation'
+
+  neo_commerce.cart_form:
+    class: Drupal\neo_commerce\Cart\CartFormAlter
+    arguments:
+      - '@neo_commerce.settings'
+      - '@event_dispatcher'
+      - '@string_translation'
+
+  logger.channel.neo_commerce:
+    parent: logger.channel_base
+    arguments: ['neo_commerce']
+
+  # Hook classes are registered by their class name, which is the service id
+  # core's HookCollectorPass looks for. Declaring them keeps their arguments
+  # explicit like the rest of the family rather than autowired.
+  Drupal\neo_commerce\Hook\FormHooks:
+    class: Drupal\neo_commerce\Hook\FormHooks
+    arguments:
+      - '@neo_commerce.add_to_cart'
+      - '@neo_commerce.cart_form'
+
+  Drupal\neo_commerce\Hook\ThemeHooks:
+    class: Drupal\neo_commerce\Hook\ThemeHooks
+
+  Drupal\neo_commerce\Hook\InstallHooks:
+    class: Drupal\neo_commerce\Hook\InstallHooks
+    arguments:
+      - '@neo_alchemist.theme_component_installer'
+      - '@plugin.manager.sdc'
+      - '@config.factory'
