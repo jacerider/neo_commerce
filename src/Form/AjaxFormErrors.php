@@ -44,10 +44,10 @@ final class AjaxFormErrors {
    *
    * @param array $element
    *   The form or element to walk, by reference.
-   * @param array $errors
+   * @param array<string, string|\Drupal\Component\Render\MarkupInterface> $errors
    *   Errors from FormStateInterface::getErrors(), keyed by the element's
    *   #parents joined with '][', which is the same key form_state builds.
-   * @param array $idMap
+   * @param array<string, string> $idMap
    *   Collects error key => rendered element #id, so the summary can link
    *   straight to the field. Passed by reference and appended to.
    */
@@ -63,7 +63,10 @@ final class AjaxFormErrors {
       }
 
       if (isset($errors[$name]) && !empty($element['#id'])) {
-        $idMap[$name] = $element['#id'];
+        // Cast so the collected map stays the string-to-string map its type
+        // declares; a render array's '#id' is always a string, so this is a
+        // no-op at runtime and a narrowing for analysis.
+        $idMap[$name] = (string) $element['#id'];
         $element['#attributes']['aria-invalid'] = 'true';
 
         // Only describe the message when there is going to be one. Core sets
@@ -89,9 +92,9 @@ final class AjaxFormErrors {
   /**
    * Builds the error summary shown above the form.
    *
-   * @param array $errors
+   * @param array<string, string|\Drupal\Component\Render\MarkupInterface> $errors
    *   Errors from FormStateInterface::getErrors().
-   * @param array $idMap
+   * @param array<string, string> $idMap
    *   The map collected by ::wire().
    * @param \Drupal\Core\StringTranslation\TranslationInterface $translation
    *   The translation service, for the pluralised heading.
