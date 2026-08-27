@@ -18,7 +18,7 @@ props:
     variation:
       type: string
       title: 'Settings variation'
-      description: 'The neo_commerce settings variation this summary was built from. MUST be printed as data-neo-cart on the outermost element -- it is the selector every cart refresh targets, so dropping it leaves the count frozen until the next page load.'
+      description: 'The neo_commerce settings variation this summary was built from. MUST be printed as data-neo-cart on the outermost element, where it has two readers: the module''s script collects it from the page and reports it with every ajax request, which is how the server knows to build this summary, and every cart refresh targets it as a selector. Dropping it leaves the count frozen until the next page load.'
       examples: ['']
     count:
       type: integer

@@ -7,12 +7,15 @@
 
   CONTRACT — three things the module depends on:
 
-  1. `data-neo-cart="{{ variation }}"` on the OUTERMOST element. Every cart
-     refresh is a ReplaceCommand aimed at `[data-neo-cart="…"]`, so this
-     attribute is how the response finds the summary — whether it was placed
-     by block layout, an Alchemist slot or straight from twig, and however
-     many of them are on the page. Remove it and the count silently stops
-     updating until the next full page load.
+  1. `data-neo-cart="{{ variation }}"` on the OUTERMOST element, where it has
+     two readers. Every cart refresh is a ReplaceCommand aimed at
+     `[data-neo-cart="…"]`, so this attribute is how the response finds the
+     summary — whether it was placed by block layout, an Alchemist slot or
+     straight from twig, and however many of them are on the page. The
+     module's script reads the same attribute off the page and sends the
+     values it finds with every ajax request, which is how the server knows
+     to build this summary and not the ones that are not here. Remove it and
+     the count silently stops updating until the next full page load.
 
   2. `link_attributes` printed on the link. It carries the href, the
      accessible name, and the use-modal-ajax wiring that opens the cart in a

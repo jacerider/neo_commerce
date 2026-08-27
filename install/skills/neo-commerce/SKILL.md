@@ -38,12 +38,15 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
 The `cart_quick` component is copied into the theme and owned by the site from
 then on. Two things in it are load-bearing:
 
-1. **`data-neo-cart="{variation}"` on the outermost element.** A cart change
-   emits one `ReplaceCommand` per configured variation, targeting
-   `[data-neo-cart="{variation}"]`. That is why the cart updates whether it was
-   placed by block layout, an Alchemist slot or straight from twig, and however
-   many are on the page — nothing looks up a block entity. **If the count stops
-   updating, check this attribute first.**
+1. **`data-neo-cart="{variation}"` on the outermost element.** It has two
+   readers. The refresh emits one `ReplaceCommand` per value, targeting
+   `[data-neo-cart="{variation}"]` — that is why the cart updates whether it
+   was placed by block layout, an Alchemist slot or straight from twig, and
+   however many are on the page, with nothing looking up a block entity. The
+   module's script reads the same attribute off the page and sends the values
+   it finds with every ajax request — the **cart report** — which is how the
+   server knows which summaries to build. **If the count stops updating, check
+   this attribute first.**
 2. **`link_attributes` printed on the link.** It carries the href, the
    accessible name, and the `use-modal-ajax` wiring. **If clicking the cart
    navigates to `/cart` instead of opening the shelf, this is why.**
@@ -133,6 +136,20 @@ foreach (\Drupal::service('neo_commerce.cart_response')->cartRefreshCommands() a
 }
 ```
 
+**The documented call is unchanged** — same name, same (no) arguments, same
+return — and it now builds only the summaries the cart report names. The
+refresh reads the report off the current request rather than taking it as an
+argument, so every caller gets that without changing a line.
+
+Nothing to pass, and nothing to arrange: a reported value naming no
+configured preset is dropped, a value reported twice is built once, and the
+order is still the default first, then the presets.
+
+If your response comes from a request that never ran the cart's script, no
+report arrives and every configured preset plus the default is built, exactly
+as before. That fallback is permanent, so a refresh from your own request
+keeps working whether or not the page reported anything.
+
 ### Extend without patching
 
 - `AddToCartCleanKeysEvent` — user-input keys that survive the post-add form
@@ -153,6 +170,7 @@ foreach (\Drupal::service('neo_commerce.cart_response')->cartRefreshCommands() a
 | Cart renders unstyled | `neo_commerce/cart` is attached by the lazy builder, not the block — check `CartLazyBuilders::cartBlock()` still sets `#attached` |
 | Link classes vanish | `addClass()` was called with several strings instead of one array |
 | Count updates on some carts only | a variation is configured that no summary was built with |
+| One summary never refreshes while the others do | its `data-neo-cart` names no configured preset — the refresh matches the report against the configured list and drops what it cannot match, rather than guessing at it |
 | Modal opens with the wrong chrome | `modal_preset` names a `neo_modal` variation that does not exist — unknown presets fall back silently |
 | Button label unchanged | it is `#value` on a `#type => submit`, never `#title` |
 | "Adding to cart…" never appears | use `#disabled_on_click`; writing `data-neo-disable-message` by hand skips the `neo/disable` library |
@@ -168,5 +186,6 @@ foreach (\Drupal::service('neo_commerce.cart_response')->cartRefreshCommands() a
 | `src/Plugin/Block/CartBlock.php` | stores only the variation id |
 | `src/Plugin/Field/FieldWidget/QuantityPlusMinusWidget.php` | `quantity_plus_minus`, moved here from `neo` keeping its id |
 | `src/js/cart/guard.ts` | wraps `Drupal.Ajax.prototype` once at load, never in `attach()` |
+| `src/js/cart/report.ts` | the cart report: collects the page's `data-neo-cart` values at request time and sends them as `neo_cart[]`; wrapped once at load, beside the guard |
 | `tests/src/Unit/AjaxFormErrorsTest.php` | the ARIA walker |
 | `tests/src/Kernel/` | settings schema, cart summary build and cacheability |

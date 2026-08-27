@@ -29,12 +29,31 @@ without a reload.
 
 ## How the cart summary refreshes
 
-Every summary prints the settings variation it was built from as
-`data-neo-cart`. A cart change emits one `ReplaceCommand` per configured
-variation, so every summary on the page updates — block layout, Alchemist
-slot, or twig, and however many of them there are. Nothing looks up a block
-entity, which is what makes this work on a site that does not build its front
-end from block layout.
+Every summary prints the preset it was built from as `data-neo-cart`, and
+that attribute has two readers. The module's script collects the values the
+document is holding and sends them with every ajax request the page makes —
+the cart report. The refresh reads that report and emits one
+`ReplaceCommand` per reported value, so every summary on the page updates —
+block layout, Alchemist slot, or twig, and however many of them there are —
+and a site with four presets and one summary builds one summary instead of
+building four and throwing three away.
+
+The report is gathered from the live document at request time, so a summary
+an earlier ajax response inserted refreshes like any other and one it
+removed is not built. Reported values are matched against the configured
+presets: a value naming a preset that is not configured is dropped rather
+than guessed at, and one reported twice is built once.
+
+With no report — a browser still holding a page from before a deploy, or
+another module calling the refresh from a request that never ran the cart's
+script — every configured preset plus the default is built, exactly as it
+was before the report existed. That fallback is permanent: nothing can tell
+the refresh whether a caller's page ran the script, and a cart that stops
+updating is worse than one built twice.
+
+Nothing looks up a block entity, which is what makes this work on a site
+that does not build its front end from block layout — and it is why the
+page, not the server, is the one thing that knows which summaries exist.
 
 ## What a theme copy must keep
 
