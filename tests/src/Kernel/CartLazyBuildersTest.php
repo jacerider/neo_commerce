@@ -285,11 +285,12 @@ class CartLazyBuildersTest extends CartKernelTestBase {
    */
   protected function addToCart(int $quantity): void {
     $cart = $this->cartProvider->createCart('default', $this->store);
-    $orderItem = $this->container->get('entity_type.manager')
-      ->getStorage('commerce_order_item')
-      ->createFromPurchasableEntity($this->variation, [
-        'quantity' => $quantity,
-      ]);
+    /** @var \Drupal\commerce_order\OrderItemStorageInterface $storage */
+    $storage = $this->container->get('entity_type.manager')
+      ->getStorage('commerce_order_item');
+    $orderItem = $storage->createFromPurchasableEntity($this->variation, [
+      'quantity' => $quantity,
+    ]);
     $this->cartManager->addOrderItem($cart, $orderItem);
   }
 

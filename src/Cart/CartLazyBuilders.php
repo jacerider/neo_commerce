@@ -188,7 +188,7 @@ class CartLazyBuilders implements TrustedCallbackInterface {
   /**
    * Builds the embedded cart contents view for each cart.
    *
-   * @param array $carts
+   * @param array<int, \Drupal\commerce_order\Entity\OrderInterface> $carts
    *   The non-empty carts, keyed by order id.
    *
    * @return array
