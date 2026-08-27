@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\neo_commerce\Hook;
 
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Hook\Order\OrderAfter;
-use Drupal\Core\Theme\ComponentPluginManager;
 use Drupal\neo_alchemist\ThemeComponentInstaller;
 
 /**
@@ -30,15 +28,9 @@ class InstallHooks {
    *
    * @param \Drupal\neo_alchemist\ThemeComponentInstaller $installer
    *   The theme component installer.
-   * @param \Drupal\Core\Theme\ComponentPluginManager $componentManager
-   *   The SDC plugin manager.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
-   *   The config factory.
    */
   public function __construct(
     protected ThemeComponentInstaller $installer,
-    protected ComponentPluginManager $componentManager,
-    protected ConfigFactoryInterface $configFactory,
   ) {}
 
   /**
@@ -69,28 +61,16 @@ class InstallHooks {
   /**
    * Repoints the cart block at the theme's own copy of the component.
    *
-   * Only ever upgrades the shipped default. Once a site builder has chosen a
-   * component their choice stands, which is what makes this safe to run from
-   * more than one hook.
+   * The claim sweeps, resolves the theme and only ever upgrades the shipped
+   * default; once a site builder has chosen a component their choice stands,
+   * which is what makes this safe to run from more than one hook.
    */
   protected function claimThemeComponent(): void {
-    // Idempotent, and cheap when there is nothing to copy. Calling it here as
-    // well as letting neo_alchemist call it removes any dependence on which
-    // module's hook implementation happens to run first.
-    $this->installer->installAll();
-
-    $theme = $this->installer->resolveTheme();
-    if (!$theme) {
-      return;
-    }
-    $config = $this->configFactory->getEditable('neo_commerce.settings');
-    if ($config->get('cart_component') !== self::DEFAULT_COMPONENT) {
-      return;
-    }
-    $id = $theme . ':' . self::COMPONENT_NAME;
-    if ($this->componentManager->hasDefinition($id)) {
-      $config->set('cart_component', $id)->save();
-    }
+    $this->installer->claimComponent(
+      self::DEFAULT_COMPONENT,
+      'neo_commerce.settings',
+      'cart_component',
+    );
   }
 
 }

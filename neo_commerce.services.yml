@@ -56,5 +56,3 @@ services:
     class: Drupal\neo_commerce\Hook\InstallHooks
     arguments:
       - '@neo_alchemist.theme_component_installer'
-      - '@plugin.manager.sdc'
-      - '@config.factory'

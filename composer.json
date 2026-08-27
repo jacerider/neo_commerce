@@ -22,6 +22,6 @@
     "jacerider/neo": "^1",
     "jacerider/neo_settings": "^1",
     "jacerider/neo_modal": "^1",
-    "jacerider/neo_alchemist": "^1"
+    "jacerider/neo_alchemist": "^1.2"
   }
 }
