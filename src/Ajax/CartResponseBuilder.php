@@ -34,6 +34,15 @@ class CartResponseBuilder {
   use StringTranslationTrait;
 
   /**
+   * The request parameter a page reports its cart summaries in.
+   *
+   * Array-valued, written by the client as indexed keys, because the default
+   * preset's `data-neo-cart` value is the empty string and an array is what
+   * keeps that distinguishable from nothing having been reported at all.
+   */
+  protected const REPORT_PARAMETER = 'neo_cart';
+
+  /**
    * Constructs the response builder.
    *
    * @param \Drupal\neo_settings\SettingsRepositoryInterface $settings
@@ -180,26 +189,48 @@ class CartResponseBuilder {
   }
 
   /**
-   * Builds the commands that refresh every cart summary on the page.
+   * Builds the commands that refresh the cart summaries on the page.
    *
    * A cart can be placed by block layout, by an Alchemist slot, or straight
    * from twig, and a page can carry more than one -- a desktop header and a
    * mobile one. Rather than guess at a class the theme happens to emit, each
-   * summary advertises the settings variation it was built from, and one
-   * command per configured variation covers all of them. A selector matching
-   * nothing is a no-op, so the usual single-variation site emits one command.
+   * summary advertises the preset it was built from as `data-neo-cart`, and
+   * one replace command per value covers all of them.
    *
-   * The variation list is deliberately unfiltered by access. The block picker
-   * offers every enabled variation, and it runs for the editor while this
-   * runs for the shopper -- so filtering here dropped the commands for any
-   * variation the visitor could not view, freezing that cart's count at
-   * whatever it was on page load with nothing in the UI saying why. Sending
-   * the command is safe because CartLazyBuilders::resolveSettings() still
-   * resolves each id under access and falls back to the active settings when
-   * it cannot: an unviewable variation rendered from the active settings on
-   * first load and re-renders from them here, so the refresh reproduces the
-   * initial render and no variation's settings reach a user who may not view
-   * them.
+   * Which of them are worth building is the page's answer, not this
+   * method's. The module's script collects the `data-neo-cart` values the
+   * document is holding and sends them with every ajax request as the cart
+   * report, so a site with four presets and one summary builds one summary
+   * instead of building four and throwing three away. The report is read
+   * from the current request rather than passed in, which is what lets this
+   * keep the name, signature and return other modules already call.
+   *
+   * Reported values are matched by string equality against the same list
+   * enumerated below, so a value naming no configured preset is dropped --
+   * exactly what already happened to a preset deleted since the page loaded
+   * -- and a crafted report can never ask for more than the configured
+   * preset count. Enumerating that list and skipping what the report did not
+   * name, rather than walking the report, is also what collapses a repeated
+   * value and what holds the order: the default first, then the presets.
+   *
+   * With no report every configured preset is built, exactly as before the
+   * report existed. That fallback is permanent, not a migration step: a
+   * browser still holding a page from before a deploy sends nothing, and so
+   * does any module calling this from a request that never ran the cart's
+   * script. A selector matching nothing is a no-op, so it costs what it
+   * always cost.
+   *
+   * The preset list is deliberately unfiltered by access. The block picker
+   * offers every enabled preset, and it runs for the editor while this runs
+   * for the shopper -- so filtering here dropped the commands for any preset
+   * the visitor could not view, freezing that cart's count at whatever it
+   * was on page load with nothing in the UI saying why. Sending the command
+   * is safe because CartLazyBuilders::resolveSettings() still resolves each
+   * id under access and falls back to the active settings when it cannot: an
+   * unviewable preset rendered from the active settings on first load and
+   * re-renders from them here, so the refresh reproduces the initial render
+   * and no preset's settings reach a user who may not view them. The report
+   * narrows that list to what is on the page; it never widens it.
    *
    * @return \Drupal\Core\Ajax\CommandInterface[]
    *   The replace commands.
@@ -207,14 +238,53 @@ class CartResponseBuilder {
   public function cartRefreshCommands(): array {
     $configured = array_keys($this->settings->getVariations(FALSE));
     $variations = array_merge([''], $configured);
+    $reported = $this->cartReport();
     $commands = [];
     foreach ($variations as $variation) {
+      if ($reported !== NULL && !in_array($variation, $reported, TRUE)) {
+        continue;
+      }
       $commands[] = new ReplaceCommand(
         '[data-neo-cart="' . $variation . '"]',
         $this->cartLazyBuilders->cartBlock($variation)
       );
     }
     return $commands;
+  }
+
+  /**
+   * Reads the cart report off the current request.
+   *
+   * The client writes it as indexed `neo_cart[]` keys on every ajax request
+   * the page makes, so it arrives as an array of the `data-neo-cart` values
+   * the document held -- on the posted parameters for the usual POST, and on
+   * the query for an ajax link core sends with GET.
+   *
+   * Nothing is interpreted here beyond the shape. The values are matched
+   * against the configured presets by the caller, which is where the bound
+   * on a crafted report lives, and anything that is not an array at all is
+   * treated as no report rather than as a report of one.
+   *
+   * An empty report is an absent one. The only way to reach it is a page
+   * whose every summary has been removed from the document, where every
+   * command matches nothing anyway, so falling back there costs nothing.
+   *
+   * @return array|null
+   *   The reported values, verbatim, or NULL when nothing was reported.
+   */
+  protected function cartReport(): ?array {
+    $request = $this->requestStack->getCurrentRequest();
+    if (!$request) {
+      return NULL;
+    }
+    $reported = $request->request->all()[static::REPORT_PARAMETER] ?? NULL;
+    if ($reported === NULL) {
+      $reported = $request->query->all()[static::REPORT_PARAMETER] ?? NULL;
+    }
+    if (!is_array($reported) || $reported === []) {
+      return NULL;
+    }
+    return $reported;
   }
 
   /**

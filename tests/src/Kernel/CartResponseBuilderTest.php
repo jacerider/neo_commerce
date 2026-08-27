@@ -514,6 +514,153 @@ class CartResponseBuilderTest extends CartKernelTestBase {
   }
 
   /**
+   * A report naming a subset builds only that subset.
+   *
+   * The commands for the presets nobody placed were always no-ops in the
+   * browser, but the server had built each summary -- and with the dropdown
+   * on, a cart contents view inside each one -- before the response left.
+   * The page is the only thing that knows which summaries exist, so when it
+   * says, the refresh believes it.
+   */
+  public function testBuildsOnlyTheReportedSummaries(): void {
+    $this->createRestrictingRole();
+    $this->createPreset('neo_commerce_alpha', 'Alpha', []);
+    $this->createPreset('neo_commerce_beta', 'Beta', [], TRUE);
+
+    $this->reportCarts(['neo_commerce_alpha']);
+
+    $this->assertSame(
+      ['[data-neo-cart="neo_commerce_alpha"]'],
+      array_column($this->refreshCommands(), 'selector')
+    );
+  }
+
+  /**
+   * A reported value naming no configured preset is dropped.
+   *
+   * Which is already what a preset deleted since the page loaded gets, so it
+   * changes no outcome -- and it is what bounds the report. Matching by
+   * string equality against the list the refresh enumerates anyway means a
+   * crafted report can never ask for more than a report of everything.
+   */
+  public function testDropsReportedValueNamingNoConfiguredPreset(): void {
+    $this->createPreset('neo_commerce_alpha', 'Alpha', []);
+
+    $this->reportCarts(['', 'neo_commerce_ghost']);
+
+    $this->assertSame(
+      ['[data-neo-cart=""]'],
+      array_column($this->refreshCommands(), 'selector')
+    );
+  }
+
+  /**
+   * A value the report names twice still gets one command.
+   *
+   * Two summaries built from the same preset are one selector and one build,
+   * and the client already deduplicates. Collapsing here as well is what
+   * keeps the bound from depending on the client being this module's.
+   */
+  public function testEmitsOneCommandForRepeatedReportedValue(): void {
+    $this->createPreset('neo_commerce_alpha', 'Alpha', []);
+    $this->createPreset('neo_commerce_beta', 'Beta', []);
+
+    $this->reportCarts([
+      'neo_commerce_alpha',
+      'neo_commerce_alpha',
+      'neo_commerce_alpha',
+    ]);
+
+    $this->assertSame(
+      ['[data-neo-cart="neo_commerce_alpha"]'],
+      array_column($this->refreshCommands(), 'selector')
+    );
+  }
+
+  /**
+   * With no report at all, every configured preset is built, plus default.
+   *
+   * The fallback is permanent, not a migration step. A browser still holding
+   * a page from before the deploy sends nothing, and so does any module
+   * calling the refresh from a request that never ran the cart's script --
+   * and a cart that stops updating is a worse failure than one built twice.
+   */
+  public function testFallsBackToEveryConfiguredPresetWithNoReport(): void {
+    $this->createPreset('neo_commerce_alpha', 'Alpha', []);
+    $this->createPreset('neo_commerce_beta', 'Beta', []);
+
+    // Nothing wrote a report, on either side of the request.
+    $request = $this->container->get('request_stack')->getCurrentRequest();
+    $this->assertArrayNotHasKey('neo_cart', $request->request->all());
+    $this->assertArrayNotHasKey('neo_cart', $request->query->all());
+
+    $this->assertSame(
+      [
+        '[data-neo-cart=""]',
+        '[data-neo-cart="neo_commerce_alpha"]',
+        '[data-neo-cart="neo_commerce_beta"]',
+      ],
+      array_column($this->refreshCommands(), 'selector')
+    );
+  }
+
+  /**
+   * A reported preset the shopper cannot view is refreshed all the same.
+   *
+   * The report narrows the enumeration to what is on the page; it never
+   * reintroduces the access filter the refresh deliberately does not have.
+   * The preset is on this shopper's page because the editor placed it, and
+   * skipping it here would freeze that cart's count with nothing saying why.
+   */
+  public function testRefreshesReportedPresetTheUserCannotView(): void {
+    $this->createRestrictingRole();
+    $this->createPreset('neo_commerce_alpha', 'Alpha', []);
+    $this->createPreset(
+      'neo_commerce_wholesale',
+      'Wholesale',
+      ['cart_label' => 'Quote basket'],
+      TRUE
+    );
+    // The fixture is genuinely out of this user's reach.
+    $this->assertArrayNotHasKey(
+      'neo_commerce_wholesale',
+      $this->container->get('neo_commerce.settings')->getVariations()
+    );
+
+    $this->reportCarts(['neo_commerce_wholesale']);
+
+    $this->assertSame(
+      ['[data-neo-cart="neo_commerce_wholesale"]'],
+      array_column($this->refreshCommands(), 'selector')
+    );
+  }
+
+  /**
+   * The reported commands keep the order an unreported refresh emits.
+   *
+   * The report arrives in whatever order the summaries sit in the document,
+   * which is never the refresh's. Enumerating the configured list and
+   * skipping what was not reported -- rather than walking the report -- is
+   * what keeps the default first and the presets in their configured order.
+   */
+  public function testEmitsReportedCommandsInEnumerationOrder(): void {
+    $this->createPreset('neo_commerce_alpha', 'Alpha', []);
+    $this->createPreset('neo_commerce_beta', 'Beta', []);
+    $this->createPreset('neo_commerce_gamma', 'Gamma', []);
+
+    $this->reportCarts(['neo_commerce_gamma', '', 'neo_commerce_alpha']);
+
+    $this->assertSame(
+      [
+        '[data-neo-cart=""]',
+        '[data-neo-cart="neo_commerce_alpha"]',
+        '[data-neo-cart="neo_commerce_gamma"]',
+      ],
+      array_column($this->refreshCommands(), 'selector')
+    );
+  }
+
+  /**
    * Builds the cart refresh commands, rendered as the response sends them.
    *
    * @return array[]
@@ -545,6 +692,22 @@ class CartResponseBuilderTest extends CartKernelTestBase {
       }
     }
     $this->fail('No refresh command targets ' . $selector . '.');
+  }
+
+  /**
+   * Writes a cart report onto the request the refresh reads.
+   *
+   * The client sends the values of every `data-neo-cart` the document holds
+   * as indexed `neo_cart[]` keys on the ajax request, so the report arrives
+   * as an array of strings on the posted parameters.
+   *
+   * @param array $values
+   *   The reported values, verbatim -- the client never interprets them.
+   */
+  protected function reportCarts(array $values): void {
+    $this->container->get('request_stack')
+      ->getCurrentRequest()
+      ->request->set('neo_cart', $values);
   }
 
   /**
