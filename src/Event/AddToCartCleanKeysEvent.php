@@ -24,7 +24,7 @@ class AddToCartCleanKeysEvent extends Event {
   /**
    * Constructs the event.
    *
-   * @param array $keys
+   * @param list<string> $keys
    *   User-input keys to preserve. Keys beginning with an underscore are
    *   always preserved and need not be listed.
    * @param \Drupal\Core\Form\FormStateInterface $formState
@@ -51,7 +51,7 @@ class AddToCartCleanKeysEvent extends Event {
   /**
    * Gets the keys to preserve.
    *
-   * @return array
+   * @return list<string>
    *   The user-input keys, deduplicated.
    */
   public function getKeys(): array {
