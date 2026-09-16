@@ -3,7 +3,7 @@ type: module
 neo: true
 description: 'Ajax cart and Drupal Commerce integration for Neo.'
 package: Neo
-version: 1.0.0
+version: 1.0.1
 core_version_requirement: ^11
 dependencies:
   - neo:neo
