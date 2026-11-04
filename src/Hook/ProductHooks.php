@@ -82,6 +82,7 @@ class ProductHooks {
     );
     if (array_intersect($tags, $cacheability->getCacheTags())) {
       $attributes->setAttribute(self::MARKER, $component->uuid());
+      $build['#attached']['library'][] = 'neo_commerce/variation';
     }
   }
 

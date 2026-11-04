@@ -12,3 +12,14 @@ cart:
     - core/drupalSettings
     - core/drupal.ajax
     - core/once
+
+variation:
+  version: VERSION
+  neo:
+    scope: front
+  js:
+    src/js/variation.ts: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+    - core/drupal.ajax

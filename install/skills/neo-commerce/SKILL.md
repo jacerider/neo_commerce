@@ -49,6 +49,17 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   puts on every product); drops injected `variation_*` fields from a product
   with a component tree; wraps a tree field on a variation.
 
+- **[src/EventSubscriber/VariationRerenderSubscriber.php](web/modules/contrib/neo_commerce/src/EventSubscriber/VariationRerenderSubscriber.php)** —
+  on `PRODUCT_VARIATION_AJAX_CHANGE` (priority -10, after the slot swap):
+  `SelectedVariation::with($eventVariation)` + `withoutAjaxFormRequest()`
+  (`src/Ajax/AjaxFormRequestTrait.php`, shared with the cart), walk each
+  product tree item's hydrated tree, `renderComponent()` each instance, send
+  `VariationReplaceCommand` for the first marked one on each branch (no
+  descent past it). `src/js/variation.ts` (library `neo_commerce/variation`,
+  attached by the marker) carries the live add-to-cart form over by its
+  `commerce-order-item-add-to-cart-form-*` class. Nightwatch:
+  `tests/src/Nightwatch/Tests/variationChangeTest.js`
+  (`NEO_COMMERCE_VARIATION_PRODUCT`).
 - **[src/Breadcrumb/ProductBreadcrumbBuilder.php](web/modules/contrib/neo_commerce/src/Breadcrumb/ProductBreadcrumbBuilder.php)** —
   "[Home /] Root / lineage / Product" for products and "[Home /] Root /
   ancestors / Term" for category terms. Driven by the **Products** settings

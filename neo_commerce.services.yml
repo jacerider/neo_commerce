@@ -85,6 +85,16 @@ services:
       # Ahead of menu_breadcrumb (1010) and taxonomy's term builder (1002).
       - { name: breadcrumb_builder, priority: 1050 }
 
+  neo_commerce.variation_rerender_subscriber:
+    class: Drupal\neo_commerce\EventSubscriber\VariationRerenderSubscriber
+    arguments:
+      - '@neo_commerce.selected_variation'
+      - '@entity_field.manager'
+      - '@renderer'
+      - '@request_stack'
+    tags:
+      - { name: event_subscriber }
+
   logger.channel.neo_commerce:
     parent: logger.channel_base
     arguments: ['neo_commerce']

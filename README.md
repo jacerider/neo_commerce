@@ -52,6 +52,15 @@ component tree lives here, not in neo_alchemist:
   root, so a variation change can find it and render it again. The signal is
   the variation's cache tag, not the `v` context, which Commerce adds to every
   product.
+- **Re-render on variation change** — `VariationRerenderSubscriber` listens
+  to Commerce's variation ajax change, forces the event's variation through
+  `SelectedVariation::with()` (the ajax POST carries no `v`), renders each
+  outermost marked instance again with neo_alchemist's
+  `ComponentTreeItem::renderComponent()` and sends a
+  `neoCommerceVariationReplace` command. `src/js/variation.ts` swaps the
+  component in but moves the live add to cart form into the new markup:
+  Commerce has already replaced that form earlier in the same response, and
+  the copy built for the re-render would be reset to the default variation.
 - **`ProductHooks`** also drops Commerce's injected `variation_*` fields from
   a product that has a component tree, and gives a tree field on a variation
   a wrapper so Commerce's replacement class has somewhere to go.
