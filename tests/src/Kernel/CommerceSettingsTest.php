@@ -84,6 +84,8 @@ class CommerceSettingsTest extends CartKernelTestBase {
       'cart_display',
       'cart_dropdown',
       'cart_show_if_empty',
+      'cart_show_label',
+      'cart_badge_empty',
       'cart_link_modal',
       'modal_preset',
       'modal_title',

@@ -159,7 +159,10 @@ preset, icons, the component, the behaviour toggles. Nothing belongs in
 `settings.php` or in code.
 
 `cart_display` switches the summary between `text` (icon plus "2 items") and
-`badge` (icon with the bare number in a `.badge`, hidden while empty). `.badge`
+`badge` (icon with the bare number in a `.badge`, hidden while empty unless
+`cart_badge_empty`). `cart_show_label` prints `cart_label` beside the icon in
+either display; in `badge` the badge then overhangs icon and label together
+(props `show_label`, `badge_empty`). `.badge`
 is a `neo_base` utility carrying shape only, so the colour is the theme's to
 pick — `neo_toolbar` pairs it with `bg-primary-500 text-primary-500-content`
 and the component follows suit.

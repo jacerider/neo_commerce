@@ -41,12 +41,16 @@
   {# addClass takes ONE array; extra arguments are silently dropped. #}
   <a{{ link.addClass(['cart-block--link', 'flex', 'items-center', 'gap-2']) }}>
     {% if display == 'badge' %}
-      {# The badge overhangs the icon, so the icon needs to be the positioning
-         context. `badge` is a neo_base utility and carries shape only — the
-         colour is ours to pick, the same way neo_toolbar does it. #}
-      <span class="cart-block--icon relative inline-flex shrink-0 text-lg">
+      {# The badge overhangs the icon (and the label, when it shows), so that
+         group is the positioning context. `badge` is a neo_base utility and
+         carries shape only; the colour is ours to pick, the same way
+         neo_toolbar does it. #}
+      <span class="cart-block--icon relative inline-flex shrink-0 items-center gap-2 text-lg">
         {{ icon }}
-        {% if count > 0 %}
+        {% if show_label and label %}
+          <span class="cart-block--label">{{ label }}</span>
+        {% endif %}
+        {% if count > 0 or badge_empty %}
           <span class="cart-block--badge badge absolute -top-1 -right-2 bg-primary-500 text-primary-500-content" aria-hidden="true">{{ count }}</span>
         {% endif %}
       </span>
@@ -56,6 +60,9 @@
     {% else %}
       {% if icon %}
         <span class="cart-block--icon shrink-0 text-lg">{{ icon }}</span>
+      {% endif %}
+      {% if show_label and label %}
+        <span class="cart-block--label">{{ label }}</span>
       {% endif %}
       <span
         class="cart-block--count"

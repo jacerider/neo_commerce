@@ -33,7 +33,7 @@ props:
     display:
       type: string
       title: 'Display'
-      description: 'How the count is shown. "text" puts the pluralised count beside the icon; "badge" shows the bare number in a .badge over the icon and hides it while the cart is empty.'
+      description: 'How the count is shown. "text" puts the pluralised count beside the icon; "badge" shows the bare number in a .badge over the icon (and the label, with show_label), hidden while the cart is empty unless badge_empty is on.'
       enum: [text, badge]
       examples: [text]
     label:
@@ -41,6 +41,16 @@ props:
       title: 'Label'
       description: 'The configured cart label, e.g. "Cart".'
       examples: ['Cart']
+    show_label:
+      type: boolean
+      title: 'Show label'
+      description: 'Print the label beside the icon. In badge display the badge then overhangs the icon and label together.'
+      examples: [false]
+    badge_empty:
+      type: boolean
+      title: 'Badge when empty'
+      description: 'Keep the badge, showing 0, while the cart is empty. Badge display only.'
+      examples: [false]
     link_attributes:
       type: object
       title: 'Link attributes'

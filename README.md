@@ -172,7 +172,9 @@ Both fail silently, which is why they are called out here and in the twig.
 Everything the cart renders is at **Configuration → Neo → Commerce**
 (`/admin/config/neo/commerce`): the button labels, the modal preset, the
 component, and the behaviour toggles — including whether the summary shows
-"2 items" beside the icon or the bare number in a badge over it.
+"2 items" beside the icon or the bare number in a badge over it, whether the
+label ("Cart", "Quote") prints beside the icon, and whether the badge stays
+up, showing 0, on an empty cart.
 
 Presets hold alternative sets of all of it, and the cart block chooses which
 preset it renders with. They are selected explicitly, never by condition, so

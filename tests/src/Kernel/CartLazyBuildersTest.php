@@ -80,6 +80,26 @@ class CartLazyBuildersTest extends CartKernelTestBase {
     $this->assertSame('0 items', $build['#props']['count_text']);
     $this->assertSame('', $build['#props']['variation']);
     $this->assertSame('Cart, 0 items', $build['#props']['link_label']);
+    $this->assertFalse($build['#props']['show_label']);
+    $this->assertFalse($build['#props']['badge_empty']);
+  }
+
+  /**
+   * The label and empty-badge switches reach the component.
+   */
+  public function testLabelAndEmptyBadgeSettings(): void {
+    $this->config('neo_commerce.settings')
+      ->set('cart_label', 'Quote')
+      ->set('cart_show_label', TRUE)
+      ->set('cart_display', 'badge')
+      ->set('cart_badge_empty', TRUE)
+      ->save();
+    $build = $this->container->get('neo_commerce.cart_lazy_builders')->cartBlock();
+
+    $this->assertTrue($build['#props']['show_label']);
+    $this->assertTrue($build['#props']['badge_empty']);
+    $this->assertSame('Quote', $build['#props']['label']);
+    $this->assertSame('badge', $build['#props']['display']);
   }
 
   /**

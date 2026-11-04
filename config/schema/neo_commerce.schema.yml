@@ -64,6 +64,12 @@ neo_commerce:
     cart_dropdown:
       type: boolean
       label: 'Show cart contents in a dropdown'
+    cart_show_label:
+      type: boolean
+      label: 'Show the label beside the icon'
+    cart_badge_empty:
+      type: boolean
+      label: 'Show the badge when the cart is empty'
     cart_show_if_empty:
       type: boolean
       label: 'Show the block when the cart is empty'

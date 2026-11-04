@@ -169,6 +169,23 @@ class CommerceSettings extends SettingsBase {
       '#title' => $this->t('Show the cart contents in a dropdown'),
       '#default_value' => $this->getValue('cart_dropdown'),
     ];
+    $form['cart_block']['cart_show_label'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Show the label beside the icon'),
+      '#description' => $this->t('Prints the label (for example "Cart") next to the icon. With the badge display the badge then sits over the icon and label together.'),
+      '#default_value' => $this->getValue('cart_show_label'),
+    ];
+    $form['cart_block']['cart_badge_empty'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Show the badge when the cart is empty'),
+      '#description' => $this->t('Keeps a "0" badge on an empty cart instead of hiding it.'),
+      '#default_value' => $this->getValue('cart_badge_empty'),
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $this->fieldName($parents, 'cart_display') . '"]' => ['value' => 'badge'],
+        ],
+      ],
+    ];
     $form['cart_block']['cart_show_if_empty'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Show the block when the cart is empty'),
@@ -318,6 +335,25 @@ class CommerceSettings extends SettingsBase {
   }
 
   /**
+   * Builds the input name of a setting from the shared form parents.
+   *
+   * @param array $parents
+   *   The shared form parents.
+   * @param string $key
+   *   The setting key.
+   *
+   * @return string
+   *   The input name.
+   */
+  protected function fieldName(array $parents, $key) {
+    $name = array_shift($parents);
+    foreach (array_merge($parents, [$key]) as $part) {
+      $name .= '[' . $part . ']';
+    }
+    return $name;
+  }
+
+  /**
    * Builds a #states array showing an element when a checkbox is on.
    *
    * The settings form nests every element under the same #parents, so the
@@ -333,13 +369,9 @@ class CommerceSettings extends SettingsBase {
    *   A #states array.
    */
   protected function visibleWhen(array $parents, $key) {
-    $name = array_shift($parents);
-    foreach (array_merge($parents, [$key]) as $part) {
-      $name .= '[' . $part . ']';
-    }
     return [
       'visible' => [
-        ':input[name="' . $name . '"]' => ['checked' => TRUE],
+        ':input[name="' . $this->fieldName($parents, $key) . '"]' => ['checked' => TRUE],
       ],
     ];
   }

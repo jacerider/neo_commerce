@@ -145,6 +145,8 @@ class CartLazyBuilders implements TrustedCallbackInterface {
         'count_text' => (string) $countText,
         'display' => (string) $settings->getValue('cart_display'),
         'label' => $label,
+        'show_label' => (bool) $settings->getValue('cart_show_label'),
+        'badge_empty' => (bool) $settings->getValue('cart_badge_empty'),
         'link_label' => $linkLabel,
         'link_attributes' => $linkAttributes,
         'url' => $url,
