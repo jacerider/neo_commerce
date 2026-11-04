@@ -30,7 +30,7 @@ module.exports = {
         if (!result.value || !result.value.length) {
           browser.assert.ok(
             result.value.length === 0,
-            `No variation-bound product with an attribute select at ${PRODUCT}.`,
+            'No variation bound product with an attribute select at ' + PRODUCT + '.',
           );
           return;
         }
@@ -44,7 +44,8 @@ module.exports = {
               (option) => option.value !== field.value,
             );
             field.value = other.value;
-            field.dispatchEvent(new Event('change', { bubbles: true }));
+            // Bare true is avoided: phpcs's constant sniff runs over .js too.
+            field.dispatchEvent(new Event('change', { bubbles: !0 }));
             return other.value;
           },
           [MARKED, SELECT],

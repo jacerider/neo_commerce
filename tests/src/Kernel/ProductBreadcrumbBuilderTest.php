@@ -18,6 +18,7 @@ use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\taxonomy\TermInterface;
 use Drupal\Tests\commerce_cart\Kernel\CartKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -136,6 +137,41 @@ class ProductBreadcrumbBuilderTest extends CartKernelTestBase {
     $tag->save();
 
     $this->assertFalse($this->builder->applies($this->termRoute($tag)));
+  }
+
+  /**
+   * The selected variation's category wins over the product's.
+   */
+  public function testVariationCategory(): void {
+    FieldStorageConfig::create([
+      'field_name' => 'field_category',
+      'entity_type' => 'commerce_product_variation',
+      'type' => 'entity_reference',
+      'settings' => ['target_type' => 'taxonomy_term'],
+    ])->save();
+    FieldConfig::create([
+      'field_name' => 'field_category',
+      'entity_type' => 'commerce_product_variation',
+      'bundle' => 'default',
+    ])->save();
+    $this->setUpCurrentUser([], ['view commerce_product']);
+    $product = $this->createProduct([$this->terms['Foods']]);
+    $product->getDefaultVariation()->set('field_category', $this->terms['Frozen'])->save();
+    $plain = ProductVariation::create([
+      'type' => 'default',
+      'sku' => 'plain',
+      'price' => new Price('1', 'USD'),
+      'status' => 1,
+    ]);
+    $plain->save();
+    $product->addVariation($plain)->save();
+
+    $this->assertSame(['The Market', 'Foods', 'Frozen', 'Lasagna'], $this->texts($this->productRoute($product)), 'The default variation\'s category wins.');
+
+    $request = Request::create('/', 'GET', ['v' => $plain->id()]);
+    $request->setSession($this->container->get('session'));
+    $this->container->get('request_stack')->push($request);
+    $this->assertSame(['The Market', 'Foods', 'Lasagna'], $this->texts($this->productRoute($product)), 'A variation without one falls back to the product\'s.');
   }
 
   /**

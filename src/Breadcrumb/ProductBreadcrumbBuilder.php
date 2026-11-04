@@ -14,6 +14,7 @@ use Drupal\Core\Link;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
+use Drupal\neo_commerce\Product\SelectedVariation;
 use Drupal\neo_settings\SettingsRepositoryInterface;
 use Drupal\taxonomy\TermInterface;
 
@@ -21,8 +22,12 @@ use Drupal\taxonomy\TermInterface;
  * Builds "Root / category lineage / Product" breadcrumbs.
  *
  * Applies to products that have a value in the configured category field,
- * and to the pages of terms that field can reference. Nothing applies until
- * a category field is configured in the neo_commerce settings.
+ * and to the pages of terms that field can reference. When the selected
+ * variation carries the same field with a value, its category wins, so a
+ * product filed under one category with variations under others (bulk and
+ * bagged, say) shows the trail of the variation being viewed. Nothing
+ * applies until a category field is configured in the neo_commerce
+ * settings.
  */
 class ProductBreadcrumbBuilder implements BreadcrumbBuilderInterface {
 
@@ -42,11 +47,14 @@ class ProductBreadcrumbBuilder implements BreadcrumbBuilderInterface {
    *   The entity type manager.
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
    *   The entity field manager.
+   * @param \Drupal\neo_commerce\Product\SelectedVariation $selectedVariation
+   *   The selected variation resolver.
    */
   public function __construct(
     protected SettingsRepositoryInterface $settings,
     protected EntityTypeManagerInterface $entityTypeManager,
     protected EntityFieldManagerInterface $entityFieldManager,
+    protected SelectedVariation $selectedVariation,
   ) {}
 
   /**
@@ -96,7 +104,15 @@ class ProductBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     $product = $route_match->getParameter('commerce_product');
     if ($product instanceof ProductInterface) {
       $breadcrumb->addCacheableDependency($product);
-      $category = $product->get($this->categoryField())->entity;
+      $field = $this->categoryField();
+      $cacheability = new CacheableMetadata();
+      $variation = $this->selectedVariation->load($product, $cacheability);
+      $breadcrumb->addCacheableDependency($cacheability);
+      $category = NULL;
+      if ($variation && $variation->hasField($field) && !$variation->get($field)->isEmpty()) {
+        $category = $variation->get($field)->entity;
+      }
+      $category ??= $product->get($field)->entity;
       if ($category instanceof TermInterface) {
         $this->addLineage($breadcrumb, $category, TRUE);
       }

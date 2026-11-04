@@ -81,6 +81,7 @@ services:
       - '@neo_commerce.settings'
       - '@entity_type.manager'
       - '@entity_field.manager'
+      - '@neo_commerce.selected_variation'
     tags:
       # Ahead of menu_breadcrumb (1010) and taxonomy's term builder (1002).
       - { name: breadcrumb_builder, priority: 1050 }

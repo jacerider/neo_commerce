@@ -74,7 +74,9 @@ field (`product_related_field`), and configures the breadcrumb.
 **Breadcrumb** — `ProductBreadcrumbBuilder` (priority 1050) builds
 "[Home /] Root / category lineage / Product" from a product's first category,
 and "[Home /] Root / ancestors / Term" on the page of a term that field can
-reference. It does nothing until a category field is set. The root crumb is
+reference. It does nothing until a category field is set. When the selected
+variation has the same category field filled in, the variation's category
+wins (a product with bulk and bagged variations filed separately). The root crumb is
 skipped when its label is empty; Home and the current page crumb are
 switches.
 

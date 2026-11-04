@@ -66,6 +66,8 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   tab (`product_category_field`, `breadcrumb_home`, `breadcrumb_root_label`,
   `breadcrumb_root_link`, `breadcrumb_current`); applies only when a category
   field is set, and only to terms of the vocabularies that field targets.
+  A selected variation carrying the same field (filled) overrides the
+  product's category, via `SelectedVariation` (so `?v=` and the ajax switch).
   Read with `getActive()` (presets have no conditions, so that is core).
 
 - **[src/Product/ProductCardBuilder.php](web/modules/contrib/neo_commerce/src/Product/ProductCardBuilder.php)** +
