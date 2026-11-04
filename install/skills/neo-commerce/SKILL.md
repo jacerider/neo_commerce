@@ -32,6 +32,16 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   the ARIA error wiring, free of container access so it unit tests.
 - **[components/cart_quick/](web/modules/contrib/neo_commerce/components/cart_quick/)** —
   the cart summary markup, ejected into the front theme on install.
+- **[src/Plugin/ComponentSlot/ProductVariationFieldSlot.php](web/modules/contrib/neo_commerce/src/Plugin/ComponentSlot/ProductVariationFieldSlot.php)** —
+  the `product_variation_field` Alchemist slot (moved from neo_alchemist,
+  same id). Renders through
+  [src/Product/VariationFieldRenderer.php](web/modules/contrib/neo_commerce/src/Product/VariationFieldRenderer.php),
+  which always emits a wrapper with its own replacement class;
+  [src/EventSubscriber/VariationFieldSlotSubscriber.php](web/modules/contrib/neo_commerce/src/EventSubscriber/VariationFieldSlotSubscriber.php)
+  swaps each configured slot on Commerce's variation ajax change.
+- **[src/Hook/ProductHooks.php](web/modules/contrib/neo_commerce/src/Hook/ProductHooks.php)** —
+  drops injected `variation_*` fields from a product with a component tree;
+  wraps a tree field on a variation so Commerce's ajax class lands.
 
 ## The contract that matters
 

@@ -36,6 +36,20 @@ services:
       - '@event_dispatcher'
       - '@string_translation'
 
+  neo_commerce.variation_field_renderer:
+    class: Drupal\neo_commerce\Product\VariationFieldRenderer
+    arguments:
+      - '@entity_type.manager'
+      - '@entity_display.repository'
+
+  neo_commerce.variation_field_slot_subscriber:
+    class: Drupal\neo_commerce\EventSubscriber\VariationFieldSlotSubscriber
+    arguments:
+      - '@config.factory'
+      - '@neo_commerce.variation_field_renderer'
+    tags:
+      - { name: event_subscriber }
+
   logger.channel.neo_commerce:
     parent: logger.channel_base
     arguments: ['neo_commerce']
@@ -51,6 +65,9 @@ services:
 
   Drupal\neo_commerce\Hook\ThemeHooks:
     class: Drupal\neo_commerce\Hook\ThemeHooks
+
+  Drupal\neo_commerce\Hook\ProductHooks:
+    class: Drupal\neo_commerce\Hook\ProductHooks
 
   Drupal\neo_commerce\Hook\InstallHooks:
     class: Drupal\neo_commerce\Hook\InstallHooks

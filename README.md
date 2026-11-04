@@ -27,6 +27,24 @@ without a reload.
 - **`components/cart_quick/`** — the cart summary markup, copied into the
   front theme on install and yours from that point on.
 
+## Products laid out with Alchemist
+
+Everything that lets a Commerce product be laid out by a Neo Alchemist
+component tree lives here, not in neo_alchemist:
+
+- **`product_variation_field` slot** — renders one variation field in a
+  chosen display. It always prints a wrapper carrying its own replacement
+  class, even when the field is empty or the variation is another bundle, so
+  a later variation has something to fill. The variation comes from
+  Commerce's `loadFromContext()`.
+- **`VariationFieldSlotSubscriber`** — on Commerce's variation ajax change,
+  rebuilds every configured slot with its own display and replaces it by that
+  class. Commerce's own swap uses the product's view mode, which is why the
+  slot does not use Commerce's class.
+- **`ProductHooks`** — drops Commerce's injected `variation_*` fields from a
+  product that has a component tree, and gives a tree field on a variation a
+  wrapper so Commerce's replacement class has somewhere to go.
+
 ## How the cart summary refreshes
 
 Every summary prints the preset it was built from as `data-neo-cart`, and
@@ -80,7 +98,8 @@ Nothing here belongs in `settings.php` or in code.
 
 ## Requirements
 
-Drupal 11, Commerce 3.3+, and `neo`, `neo_settings`, `neo_modal` and
+Drupal 11, Commerce 3.3+ (`commerce_cart`, `commerce_order`,
+`commerce_product`), and `neo`, `neo_settings`, `neo_modal` and
 `neo_alchemist`.
 
 ## Notes
