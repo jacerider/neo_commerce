@@ -89,6 +89,17 @@ switches.
   argument (`neo_commerce_category`), so a parent category lists its
   children's products too. The field names are the defaults to adjust.
 
+### Related products
+
+The **`related_products`** slot (product components only) renders, as product
+cards, the products an editor picked in `product_related_field`, or, when
+there are none, up to `limit` (default 4) other published products sharing
+the product's first category, weight then title (`RelatedProducts`). It
+renders nothing when the list is empty, so the component can wrap the whole
+"More from the *Category*" section in a test of the slot. Bind the heading's
+category name with the `entity` provider through `field_category > name`
+(the first category).
+
 ## How the cart summary refreshes
 
 Every summary prints the preset it was built from as `data-neo-cart`, and

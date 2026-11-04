@@ -72,6 +72,14 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   the `neo_commerce_category` default argument (term page + descendants,
   joined with `+`).
 
+- **[src/Plugin/ComponentSlot/RelatedProductsSlot.php](web/modules/contrib/neo_commerce/src/Plugin/ComponentSlot/RelatedProductsSlot.php)** —
+  `related_products` slot: picked products (`product_related_field`) else up
+  to `limit` from the first category
+  ([src/Product/RelatedProducts.php](web/modules/contrib/neo_commerce/src/Product/RelatedProducts.php)),
+  as `card` view-mode renders. Returns `[]` when empty — test the slot in twig
+  to hide the section. Cacheability (including `commerce_product_list` for
+  the fallback) goes onto the component.
+
 ## The contract that matters
 
 The `cart_quick` component is copied into the theme and owned by the site from

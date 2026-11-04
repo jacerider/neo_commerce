@@ -48,6 +48,12 @@ services:
       - '@entity_type.manager'
       - '@commerce_price.currency_formatter'
 
+  neo_commerce.related_products:
+    class: Drupal\neo_commerce\Product\RelatedProducts
+    arguments:
+      - '@neo_commerce.settings'
+      - '@entity_type.manager'
+
   neo_commerce.variation_field_renderer:
     class: Drupal\neo_commerce\Product\VariationFieldRenderer
     arguments:

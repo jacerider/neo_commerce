@@ -129,3 +129,25 @@ block.settings.neo_commerce_cart:
     variation:
       type: string
       label: 'Settings variation'
+
+neo_alchemist.neo_component_slot.product_variation_field:
+  type: mapping
+  label: 'Product variation field slot provider'
+  mapping:
+    bundle:
+      type: string
+      label: Bundle
+    display:
+      type: string
+      label: Display
+    field:
+      type: string
+      label: Field
+
+neo_alchemist.neo_component_slot.related_products:
+  type: mapping
+  label: 'Related products slot provider'
+  mapping:
+    limit:
+      type: integer
+      label: 'Most products from the category'
