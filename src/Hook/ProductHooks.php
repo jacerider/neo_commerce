@@ -5,14 +5,81 @@ declare(strict_types=1);
 namespace Drupal\neo_commerce\Hook;
 
 use Drupal\commerce_product\Entity\ProductInterface;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Template\Attribute;
+use Drupal\neo_alchemist\Entity\Component;
+use Drupal\neo_commerce\Product\SelectedVariation;
 
 /**
  * Product display hooks for laying out products with Neo Alchemist.
  */
 class ProductHooks {
+
+  /**
+   * The attribute that marks a component bound to the selected variation.
+   *
+   * Its value is the component instance uuid, which is what a variation
+   * change re-renders it by.
+   */
+  const MARKER = 'data-neo-commerce-variation';
+
+  /**
+   * Constructs the hook handler.
+   *
+   * @param \Drupal\neo_commerce\Product\SelectedVariation $selectedVariation
+   *   The selected variation resolver.
+   */
+  public function __construct(
+    protected SelectedVariation $selectedVariation,
+  ) {}
+
+  /**
+   * Implements hook_neo_alchemist_reference_alter().
+   *
+   * A binding that walks a product's `variations` field follows the variation
+   * the shopper selected rather than the first one, so a prop bound to
+   * `variations > field_media` shows the selected variation's images.
+   */
+  #[Hook('neo_alchemist_reference_alter')]
+  public function referenceAlter(?EntityInterface &$target, EntityReferenceFieldItemListInterface $field, CacheableMetadata $cacheability): void {
+    $product = $field->getEntity();
+    if ($field->getName() !== 'variations' || !$product instanceof ProductInterface) {
+      return;
+    }
+    $target = $this->selectedVariation->load($product, $cacheability);
+  }
+
+  /**
+   * Implements hook_neo_component_build_alter().
+   *
+   * Marks every product component whose props were resolved through one of
+   * its product's variations. Reading a variation adds that variation's cache
+   * tag to the component, which is the signal. The `v` cache context is not:
+   * Commerce adds it to every product, so it would mark everything.
+   */
+  #[Hook('neo_component_build_alter')]
+  public function componentBuildAlter(array &$build, CacheableMetadata $cacheability, Component $component): void {
+    $attributes = $build['#props']['attributes'] ?? NULL;
+    if (!$attributes instanceof Attribute) {
+      return;
+    }
+    $product = $component->getTargetEntity();
+    if (!$product instanceof ProductInterface) {
+      return;
+    }
+    $tags = array_map(
+      fn ($id) => 'commerce_product_variation:' . $id,
+      $product->getVariationIds(),
+    );
+    if (array_intersect($tags, $cacheability->getCacheTags())) {
+      $attributes->setAttribute(self::MARKER, $component->uuid());
+    }
+  }
 
   /**
    * Implements hook_ENTITY_TYPE_view_alter() for commerce_product.

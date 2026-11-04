@@ -1,6 +1,6 @@
 ---
 name: neo-commerce
-description: Configure and extend neo_commerce — the ajax cart for Drupal Commerce on Neo. Use when asked to add or tune ajax add-to-cart, open the cart in a modal or shelf after adding, place or restyle the cart summary block (the cart_quick SDC), change cart button labels ("Update cart", "Checkout") or the remove/quantity controls, make the cart form update without a page reload, refresh the cart count from your own ajax response, add or scope a neo_commerce settings variation, subscribe to AddToCartCleanKeysEvent / AddToCartResponseEvent / CartFormAlterEvent, or debug why a cart count will not update or an add-to-cart validation error is not announced. NOT for the checkout flow, payment gateways, or product/variation display (plain Commerce), and NOT for authoring page-building components (use neo-component).
+description: Configure and extend neo_commerce — the ajax cart for Drupal Commerce on Neo. Use when asked to add or tune ajax add-to-cart, open the cart in a modal or shelf after adding, place or restyle the cart summary block (the cart_quick SDC), change cart button labels ("Update cart", "Checkout") or the remove/quantity controls, make the cart form update without a page reload, refresh the cart count from your own ajax response, add or scope a neo_commerce settings variation, subscribe to AddToCartCleanKeysEvent / AddToCartResponseEvent / CartFormAlterEvent, or debug why a cart count will not update or an add-to-cart validation error is not announced. Also covers laying out products with Alchemist: binding props to the selected variation (variations > field), the product_variation_field slot, and marked re-render on variation change. NOT for the checkout flow or payment gateways, and NOT for authoring page-building components (use neo-component).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
@@ -40,8 +40,14 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   [src/EventSubscriber/VariationFieldSlotSubscriber.php](web/modules/contrib/neo_commerce/src/EventSubscriber/VariationFieldSlotSubscriber.php)
   swaps each configured slot on Commerce's variation ajax change.
 - **[src/Hook/ProductHooks.php](web/modules/contrib/neo_commerce/src/Hook/ProductHooks.php)** —
-  drops injected `variation_*` fields from a product with a component tree;
-  wraps a tree field on a variation so Commerce's ajax class lands.
+  implements `hook_neo_alchemist_reference_alter()` so an `entity` binding
+  through `variations` (e.g. `variations > field_media`) follows the selected
+  variation ([src/Product/SelectedVariation.php](web/modules/contrib/neo_commerce/src/Product/SelectedVariation.php),
+  Commerce's `loadFromContext()`); marks those components
+  `data-neo-commerce-variation="<uuid>"` (signal: a variation cache tag of
+  the component's own product — **not** `url.query_args:v`, which Commerce
+  puts on every product); drops injected `variation_*` fields from a product
+  with a component tree; wraps a tree field on a variation.
 
 ## The contract that matters
 

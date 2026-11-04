@@ -121,13 +121,13 @@ class VariationFieldRendererTest extends CartKernelTestBase {
     [$product, $variations] = $this->createProduct(['One', 'Two']);
     [$other] = $this->createProduct(['Elsewhere']);
 
-    $this->assertSame($variations[0]->id(), $this->renderer->selectedVariation($product)->id(), 'No v argument falls back to the default variation.');
+    $this->assertSame($variations[0]->id(), $this->container->get('neo_commerce.selected_variation')->load($product)->id(), 'No v argument falls back to the default variation.');
 
     $this->pushRequest($variations[1]->id());
-    $this->assertSame($variations[1]->id(), $this->renderer->selectedVariation($product)->id(), 'The v argument selects the variation.');
+    $this->assertSame($variations[1]->id(), $this->container->get('neo_commerce.selected_variation')->load($product)->id(), 'The v argument selects the variation.');
 
     $this->pushRequest($other->getDefaultVariation()->id());
-    $this->assertSame($variations[0]->id(), $this->renderer->selectedVariation($product)->id(), 'A variation of another product is ignored.');
+    $this->assertSame($variations[0]->id(), $this->container->get('neo_commerce.selected_variation')->load($product)->id(), 'A variation of another product is ignored.');
   }
 
   /**

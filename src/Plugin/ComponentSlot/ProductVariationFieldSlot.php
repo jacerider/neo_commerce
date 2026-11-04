@@ -17,6 +17,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\neo_alchemist\Attribute\ComponentSlot;
 use Drupal\neo_alchemist\ComponentInterface;
 use Drupal\neo_alchemist\Slot\ComponentSlotPluginBase;
+use Drupal\neo_commerce\Product\SelectedVariation;
 use Drupal\neo_commerce\Product\VariationFieldRenderer;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -68,6 +69,13 @@ final class ProductVariationFieldSlot extends ComponentSlotPluginBase implements
   protected VariationFieldRenderer $variationFieldRenderer;
 
   /**
+   * The selected variation resolver.
+   *
+   * @var \Drupal\neo_commerce\Product\SelectedVariation
+   */
+  protected SelectedVariation $selectedVariation;
+
+  /**
    * {@inheritdoc}
    */
   public function __construct(
@@ -81,6 +89,7 @@ final class ProductVariationFieldSlot extends ComponentSlotPluginBase implements
     EntityDisplayRepositoryInterface $entity_display_repository,
     EntityFieldManagerInterface $entity_field_manager,
     VariationFieldRenderer $variation_field_renderer,
+    SelectedVariation $selected_variation,
   ) {
     parent::__construct($plugin_id, $plugin_definition, $component, $uuid, $configuration);
     $this->entityTypeManager = $entity_type_manager;
@@ -88,6 +97,7 @@ final class ProductVariationFieldSlot extends ComponentSlotPluginBase implements
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityFieldManager = $entity_field_manager;
     $this->variationFieldRenderer = $variation_field_renderer;
+    $this->selectedVariation = $selected_variation;
   }
 
   /**
@@ -105,6 +115,7 @@ final class ProductVariationFieldSlot extends ComponentSlotPluginBase implements
       $container->get('entity_display.repository'),
       $container->get('entity_field.manager'),
       $container->get('neo_commerce.variation_field_renderer'),
+      $container->get('neo_commerce.selected_variation'),
     );
   }
 
@@ -221,7 +232,7 @@ final class ProductVariationFieldSlot extends ComponentSlotPluginBase implements
     }
     return $this->variationFieldRenderer->build(
       $product,
-      $this->variationFieldRenderer->selectedVariation($product),
+      $this->selectedVariation->load($product),
       $this->configuration,
     );
   }

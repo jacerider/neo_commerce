@@ -36,6 +36,11 @@ services:
       - '@event_dispatcher'
       - '@string_translation'
 
+  neo_commerce.selected_variation:
+    class: Drupal\neo_commerce\Product\SelectedVariation
+    arguments:
+      - '@entity_type.manager'
+
   neo_commerce.variation_field_renderer:
     class: Drupal\neo_commerce\Product\VariationFieldRenderer
     arguments:
@@ -68,6 +73,8 @@ services:
 
   Drupal\neo_commerce\Hook\ProductHooks:
     class: Drupal\neo_commerce\Hook\ProductHooks
+    arguments:
+      - '@neo_commerce.selected_variation'
 
   Drupal\neo_commerce\Hook\InstallHooks:
     class: Drupal\neo_commerce\Hook\InstallHooks

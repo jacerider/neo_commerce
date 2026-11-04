@@ -41,9 +41,20 @@ component tree lives here, not in neo_alchemist:
   rebuilds every configured slot with its own display and replaces it by that
   class. Commerce's own swap uses the product's view mode, which is why the
   slot does not use Commerce's class.
-- **`ProductHooks`** — drops Commerce's injected `variation_*` fields from a
-  product that has a component tree, and gives a tree field on a variation a
-  wrapper so Commerce's replacement class has somewhere to go.
+- **Selected variation binding** — `ProductHooks` implements
+  `hook_neo_alchemist_reference_alter()`: a prop bound through a product's
+  `variations` field (for example `variations > field_media`) follows the
+  variation the shopper selected, resolved by `SelectedVariation` through
+  Commerce's `loadFromContext()`, never by reading `v` here. The binding adds
+  `url.query_args:v` and the variation's cache tags.
+- **Marking** — a product component whose props read one of the product's
+  variations carries `data-neo-commerce-variation="<instance uuid>"` on its
+  root, so a variation change can find it and render it again. The signal is
+  the variation's cache tag, not the `v` context, which Commerce adds to every
+  product.
+- **`ProductHooks`** also drops Commerce's injected `variation_*` fields from
+  a product that has a component tree, and gives a tree field on a variation
+  a wrapper so Commerce's replacement class has somewhere to go.
 
 ## How the cart summary refreshes
 

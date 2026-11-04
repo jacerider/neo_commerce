@@ -24,11 +24,6 @@ use Drupal\Core\Render\Element;
 class VariationFieldRenderer {
 
   /**
-   * The cache context a selected variation varies by.
-   */
-  const CACHE_CONTEXT = 'url.query_args:v';
-
-  /**
    * Constructs the renderer.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
@@ -40,25 +35,6 @@ class VariationFieldRenderer {
     protected EntityTypeManagerInterface $entityTypeManager,
     protected EntityDisplayRepositoryInterface $displayRepository,
   ) {}
-
-  /**
-   * Loads the variation the current request selects for a product.
-   *
-   * Commerce reads the `v` query argument, ignores a variation the product
-   * does not own or the user cannot view, and falls back to the default.
-   *
-   * @param \Drupal\commerce_product\Entity\ProductInterface $product
-   *   The product.
-   *
-   * @return \Drupal\commerce_product\Entity\ProductVariationInterface|null
-   *   The selected variation, or NULL when the product has none.
-   */
-  public function selectedVariation(ProductInterface $product): ?ProductVariationInterface {
-    /** @var \Drupal\commerce_product\ProductVariationStorageInterface $storage */
-    $storage = $this->entityTypeManager
-      ->getStorage('commerce_product_variation');
-    return $storage->loadFromContext($product);
-  }
 
   /**
    * Builds a variation field for a slot's settings.
@@ -100,7 +76,7 @@ class VariationFieldRenderer {
     $build['#weight'] = 0;
 
     $cacheability = CacheableMetadata::createFromRenderArray($build)
-      ->addCacheContexts([self::CACHE_CONTEXT])
+      ->addCacheContexts([SelectedVariation::CACHE_CONTEXT])
       ->addCacheableDependency($product);
     if ($variation) {
       $cacheability->addCacheableDependency($variation);
