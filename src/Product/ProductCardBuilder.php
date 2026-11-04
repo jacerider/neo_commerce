@@ -76,7 +76,7 @@ class ProductCardBuilder {
         'tagline' => $this->string($product, (string) $settings->getValue('product_tagline_field')),
         'letter' => mb_strtoupper(mb_substr(trim($title), 0, 1)),
         'price' => $variation ? $this->price($variation) : '',
-        'options_url' => count($variations) > 1 ? $url : '',
+        'options_url' => $this->quickAdds($variations) ? '' : $url,
         'options_label' => (string) $settings->getValue('product_card_options_label'),
       ],
       '#slots' => [],
@@ -88,7 +88,7 @@ class ProductCardBuilder {
         $build['#slots']['image'] = $image;
       }
     }
-    if ($variation && count($variations) === 1) {
+    if ($variation && $this->quickAdds($variations)) {
       $build['#slots']['action'] = [
         '#lazy_builder' => [
           'commerce_product.lazy_builders:addToCartForm',
@@ -105,6 +105,35 @@ class ProductCardBuilder {
 
     $cacheability->applyTo($build);
     return $build;
+  }
+
+  /**
+   * Whether the card can add the product straight to the cart.
+   *
+   * Only a product with one enabled variation whose add to cart form asks
+   * for nothing beyond the quantity: a gift card's amount, say, needs the
+   * product page.
+   *
+   * @param \Drupal\commerce_product\Entity\ProductVariationInterface[] $variations
+   *   The product's enabled variations.
+   */
+  protected function quickAdds(array $variations): bool {
+    if (count($variations) !== 1) {
+      return FALSE;
+    }
+    $variation = reset($variations);
+    $orderItemType = $variation->getOrderItemTypeId();
+    $display = $this->entityTypeManager
+      ->getStorage('entity_form_display')
+      ->load('commerce_order_item.' . $orderItemType . '.add_to_cart');
+    if (!$display) {
+      return TRUE;
+    }
+    $asks = array_diff(
+      array_keys($display->getComponents()),
+      ['purchased_entity', 'quantity'],
+    );
+    return $asks === [];
   }
 
   /**

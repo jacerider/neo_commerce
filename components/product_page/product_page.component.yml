@@ -84,7 +84,6 @@ props:
     below_buy:
       type: region
       title: 'Under the buy row'
-      sizes: [xs, sm]
     below_tabs:
       type: region
       title: 'Under the tabs'
