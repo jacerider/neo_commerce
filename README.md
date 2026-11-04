@@ -109,6 +109,15 @@ renders nothing when the list is empty, so the component can wrap the whole
 category name with the `entity` provider through `field_category > name`
 (the first category).
 
+### Product categories
+
+`ProductCategories` (`neo_commerce.product_categories`) lists the category
+vocabulary (the one `product_category_field` targets) as a flat tree of rows
+(`term`, `title`, `url`, `depth`, `active`), leaving out every category with no
+published product in itself or below it. `tree($active, $cacheability, 1)`
+gives the top level only. Feed it to a component through the `event` value
+provider for a category sidebar or a landing grid.
+
 ## How the cart summary refreshes
 
 Every summary prints the preset it was built from as `data-neo-cart`, and

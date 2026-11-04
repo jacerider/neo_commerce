@@ -77,13 +77,17 @@ class RelatedProductsTest extends CartKernelTestBase {
         'field_name' => $name,
         'entity_type' => 'commerce_product',
         'bundle' => 'default',
+        'settings' => [
+          'handler' => 'default:' . $target,
+          'handler_settings' => $target === 'taxonomy_term' ? ['target_bundles' => ['category' => 'category']] : [],
+        ],
       ])->save();
     }
     $this->config('neo_commerce.settings')
       ->set('product_category_field', 'field_category')
       ->set('product_related_field', 'field_related')
       ->save();
-    $this->setUpCurrentUser([], ['view commerce_product']);
+    $this->setUpCurrentUser([], ['view commerce_product', 'access content']);
     foreach (['Bakery', 'Gifts'] as $name) {
       $term = Term::create(['vid' => 'category', 'name' => $name]);
       $term->save();
@@ -138,6 +142,30 @@ class RelatedProductsTest extends CartKernelTestBase {
     $this->assertSame([], $this->finder->load($product, 4, $cacheability));
     $this->assertContains('commerce_product_list', $cacheability->getCacheTags());
     $this->assertContains('config:neo_commerce.settings', $cacheability->getCacheTags());
+  }
+
+  /**
+   * Category lists leave out categories with no published products.
+   */
+  public function testCategoriesHideEmpty(): void {
+    $parent = Term::create(['vid' => 'category', 'name' => 'Foods']);
+    $parent->save();
+    $child = Term::create(['vid' => 'category', 'name' => 'Frozen', 'parent' => $parent->id()]);
+    $child->save();
+    $empty = Term::create(['vid' => 'category', 'name' => 'Empty', 'parent' => $parent->id()]);
+    $empty->save();
+    $this->createProduct('Lasagna', $child);
+    $this->createProduct('Draft', $this->terms['Bakery'], [], FALSE);
+
+    $categories = $this->container->get('neo_commerce.product_categories');
+    $cacheability = new CacheableMetadata();
+    $rows = $categories->tree($child, $cacheability);
+
+    $this->assertSame(['Foods', 'Frozen'], array_column($rows, 'title'), 'A parent shows through its child; empty and draft-only categories do not.');
+    $this->assertSame([0, 1], array_column($rows, 'depth'));
+    $this->assertSame([FALSE, TRUE], array_column($rows, 'active'));
+    $this->assertSame(['Foods'], array_column($categories->tree(NULL, new CacheableMetadata(), 1), 'title'));
+    $this->assertContains('commerce_product_list', $cacheability->getCacheTags());
   }
 
   /**

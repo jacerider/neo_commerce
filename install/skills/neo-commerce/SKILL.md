@@ -80,6 +80,13 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   to hide the section. Cacheability (including `commerce_product_list` for
   the fallback) goes onto the component.
 
+- **[src/Product/ProductCategories.php](web/modules/contrib/neo_commerce/src/Product/ProductCategories.php)** —
+  non-empty category tree (published products in the term or a descendant,
+  one aggregate query per request + one `loadTree`), for sidebars and landing
+  grids via an `event` value subscriber. Rows: `term`, `title`, `url`,
+  `depth`, `active`; `$maxDepth = 1` for top level. Tags:
+  `commerce_product_list`, `taxonomy_term_list`, settings config.
+
 ## The contract that matters
 
 The `cart_quick` component is copied into the theme and owned by the site from

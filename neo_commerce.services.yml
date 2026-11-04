@@ -54,6 +54,13 @@ services:
       - '@neo_commerce.settings'
       - '@entity_type.manager'
 
+  neo_commerce.product_categories:
+    class: Drupal\neo_commerce\Product\ProductCategories
+    arguments:
+      - '@neo_commerce.settings'
+      - '@entity_type.manager'
+      - '@entity_field.manager'
+
   neo_commerce.variation_field_renderer:
     class: Drupal\neo_commerce\Product\VariationFieldRenderer
     arguments:
