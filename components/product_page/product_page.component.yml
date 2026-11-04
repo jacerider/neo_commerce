@@ -1,0 +1,106 @@
+$schema: 'https://git.drupalcode.org/project/drupal/-/raw/10.1.x/core/modules/sdc/src/metadata.schema.json'
+name: 'Product | Page'
+status: stable
+description: 'A product page: breadcrumb, gallery with lightbox, title, price and buy row, Description and Details tabs, two regions and related products. Bind it to a product type; image, description and details follow the selected variation.'
+# Source template. `neo: false` keeps this module copy out of the component
+# picker; `neo_install: true` has neo_alchemist copy it into the front theme on
+# install, flipping the copy to `neo: true`. The theme copy is the one you
+# restyle. Strip `neo_install` from that copy -- the installer flips `neo` but
+# leaves the key behind, and a stale one trips drush neo:alchemist:validate.
+neo: false
+neo_install: true
+props:
+  type: object
+  properties:
+    breadcrumb:
+      type: breadcrumb
+      title: Breadcrumb
+      examples:
+        - title: 'The Market'
+          url: 'internal:/'
+        - title: Bakery
+          url: 'internal:/'
+        - title: 'Rosemary Focaccia'
+          url: null
+    heading:
+      type: heading
+      title: Title
+      examples:
+        title: 'Rosemary Focaccia'
+        h1: 1
+    title_accent:
+      type: string
+      title: 'Title accent'
+      description: 'The words of the title set apart. Must appear in the title exactly.'
+      examples: ['Focaccia']
+    price:
+      type: markup
+      title: Price
+      examples: ['$12.00']
+    images:
+      type: array
+      title: Images
+      description: 'The selected variation''s images. The first is the main image.'
+      examples:
+        - image:
+            src: 'https://placehold.co/800x800.png'
+            alt: 'Example image'
+            width: 800
+            height: 800
+        - image:
+            src: 'https://placehold.co/800x800/000000/FFF.png'
+            alt: 'Example image'
+            width: 800
+            height: 800
+      items:
+        type: object
+        title: Image
+        properties:
+          image:
+            type: image
+            title: Image
+    description:
+      type: markup
+      title: Description
+      examples: ['<p>Baked every morning with rosemary and sea salt.</p>']
+    details:
+      type: array
+      title: Details
+      examples:
+        - label: Size
+          value: '9 x 13 in'
+        - label: Storage
+          value: 'Best the day it is baked.'
+      items:
+        type: object
+        title: Row
+        properties:
+          label:
+            type: string
+            title: Label
+          value:
+            type: string
+            title: Value
+    below_buy:
+      type: region
+      title: 'Under the buy row'
+      sizes: [xs, sm]
+    below_tabs:
+      type: region
+      title: 'Under the tabs'
+    related_title:
+      type: string
+      title: 'Related products category'
+      description: 'Shown as "More from the …". Usually the first category name.'
+      examples: ['Bakery']
+    spacing:
+      type: spacing
+    gap:
+      type: gap
+slots:
+  buy:
+    title: 'Buy row'
+    description: 'The add to cart form: the entity_field slot on variations with the commerce_add_to_cart formatter.'
+  related:
+    title: 'Related products'
+    description: 'The related_products slot. The section hides when it is empty.'

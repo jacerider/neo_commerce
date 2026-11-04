@@ -1,0 +1,142 @@
+{#
+  Product | Page — the product page.
+
+  Bind it as a product type's tree field default (see the neo-commerce
+  skill). Images, description and details are bound through `variations`, so
+  they follow the variation the shopper selects; neo_commerce marks this
+  component for that and re-renders it on a variation change.
+
+  - Gallery: the main image shows the active image; thumbnails switch it. The
+    lightbox is one neo_modal group of hidden triggers, one per image, so its
+    "n / total" counter counts each image once. The main image and the zoom
+    badge open the active image's trigger.
+  - Tabs: Description and Details. A tab with no content is not rendered; with
+    neither, the tab bar is not either.
+  - Regions: `below_buy` under the buy row, `below_tabs` under the tabs.
+  - Related: the `related` slot, inside a section that is only printed when
+    the slot has content.
+
+  Generic markup: restyle the theme copy.
+#}
+{% set classes = ['product-page', 'component-bg', 'bg-default'] %}
+{% set group = 'product-gallery-' ~ random() %}
+{% set has_description = description|render|striptags|trim is not empty %}
+{% set has_details = details is not empty %}
+{% set related_markup = related|render %}
+{% set tag = heading.tag ?: 'h1' %}
+{% set parts = title_accent and title_accent in heading.title ? heading.title|split(title_accent, 2) : [] %}
+<div{{ attributes.addClass(classes) }}>
+  <div class="container-content component-spacing-reset flex flex-col gap-10">
+
+    {% if breadcrumb %}
+      <nav aria-label="{{ 'Breadcrumb'|t }}" class="product-page__breadcrumb">
+        <ol class="flex flex-wrap items-center gap-2 text-sm">
+          {% for item in breadcrumb %}
+            {% set link_tag = item.url.uri ? 'a' : 'span' %}
+            <li>
+              <{{ link_tag }}{% if item.url.uri %} href="{{ neo_uri(item.url.uri, item.url.options) }}"{% endif %}{% if loop.last %} aria-current="page"{% endif %}>{{ item.title }}</{{ link_tag }}>
+            </li>
+            {% if not loop.last %}<li aria-hidden="true">/</li>{% endif %}
+          {% endfor %}
+        </ol>
+      </nav>
+    {% endif %}
+
+    <div class="product-page__hero grid gap-10 md:grid-cols-2">
+      <div class="product-page__gallery flex flex-col gap-4" x-data="{ active: 0 }">
+        {% if images %}
+          <div class="product-page__main relative aspect-square overflow-hidden">
+            {% for item in images %}
+              <button type="button" class="product-page__main-image absolute inset-0 h-full w-full" x-show="active === {{ loop.index0 }}"{% if not loop.first %} x-cloak{% endif %} x-on:click="$refs['trigger{{ loop.index0 }}'].click()" aria-label="{{ 'View larger image @n of @total'|t({'@n': loop.index, '@total': images|length}) }}">
+                {{ neo_image_style(item.image.src, {focal: {width: 900, height: 900}}, item.image.alt) }}
+              </button>
+            {% endfor %}
+            <span class="product-page__zoom pointer-events-none absolute bottom-3 right-3" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg></span>
+          </div>
+          {% if images|length > 1 %}
+            <ul class="product-page__thumbs grid grid-cols-4 gap-3">
+              {% for item in images %}
+                <li>
+                  <button type="button" class="block aspect-square w-full overflow-hidden" x-on:click="active = {{ loop.index0 }}" x-bind:aria-current="active === {{ loop.index0 }}" aria-label="{{ 'Show image @n'|t({'@n': loop.index}) }}">
+                    {{ neo_image_style(item.image.src, {focal: {width: 200, height: 200}}, item.image.alt) }}
+                  </button>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <div class="hidden">
+            {% for item in images %}
+              {% set full = neo_image_style(item.image.src, {scale: {width: 1600}}, item.image.alt) %}
+              {{ full|neo_modal('Image @n'|t({'@n': loop.index}), {group: group, numeration: true}, 'media', {}, {'x-ref': 'trigger' ~ loop.index0}) }}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="product-page__summary flex flex-col gap-5">
+        {% if heading.title %}
+          <{{ tag }} class="product-page__title">
+            {%- if parts -%}
+              {{ parts[0] }}<em>{{ title_accent }}</em>{{ parts[1] }}
+            {%- else -%}
+              {{ heading.title }}
+            {%- endif -%}
+          </{{ tag }}>
+        {% endif %}
+        {% if price %}
+          <div class="product-page__price">{{ price }}</div>
+        {% endif %}
+        <hr class="product-page__rule">
+        {% if buy %}
+          <div class="product-page__buy">{{ buy }}</div>
+        {% endif %}
+        {% if below_buy %}
+          <div class="product-page__below-buy neo-region-flush-x neo-region-flush-y">{{ below_buy }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if has_description or has_details %}
+      {% set first = has_description ? 'description' : 'details' %}
+      <div class="product-page__tabs" x-data="{ tab: '{{ first }}' }">
+        <div role="tablist" class="flex gap-6">
+          {% if has_description %}
+            <button type="button" role="tab" x-on:click="tab = 'description'" x-bind:aria-selected="tab === 'description'">{{ 'Description'|t }}</button>
+          {% endif %}
+          {% if has_details %}
+            <button type="button" role="tab" x-on:click="tab = 'details'" x-bind:aria-selected="tab === 'details'">{{ 'Details'|t }}</button>
+          {% endif %}
+        </div>
+        {% if has_description %}
+          <div role="tabpanel" class="product-page__description prose pt-6" x-show="tab === 'description'">{{ description }}</div>
+        {% endif %}
+        {% if has_details %}
+          <dl role="tabpanel" class="product-page__details grid grid-cols-[auto_1fr] gap-x-8 gap-y-3 pt-6" x-show="tab === 'details'"{% if has_description %} x-cloak{% endif %}>
+            {% for row in details %}
+              <dt class="font-semibold">{{ row.label }}</dt>
+              <dd>{{ row.value }}</dd>
+            {% endfor %}
+          </dl>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if below_tabs %}
+      <div class="product-page__below-tabs neo-region-flush-x">{{ below_tabs }}</div>
+    {% endif %}
+
+    {% if related_markup|striptags('<img><a><form>')|trim is not empty %}
+      <section class="product-page__related flex flex-col gap-6">
+        <h2 class="product-page__related-title">
+          {%- if related_title -%}
+            {{ 'More from the'|t }} <em>{{ related_title }}</em>
+          {%- else -%}
+            {{ 'You may also like'|t }}
+          {%- endif -%}
+        </h2>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">{{ related_markup }}</div>
+      </section>
+    {% endif %}
+
+  </div>
+</div>

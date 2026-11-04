@@ -89,6 +89,15 @@ switches.
   argument (`neo_commerce_category`), so a parent category lists its
   children's products too. The field names are the defaults to adjust.
 
+### Starter: product page
+
+`components/product_page` (`neo_install: true`) lays a product out like a shop
+page: breadcrumb, a gallery with a grouped lightbox and "n / total" counter,
+title with an accent, price, the buy row (`buy` slot), Description and Details
+tabs (each hidden when empty), `below_buy` and `below_tabs` regions, and a
+related products section that hides when the `related` slot is empty. The
+neo-commerce skill lists the bindings for wiring a product type to it.
+
 ### Related products
 
 The **`related_products`** slot (product components only) renders, as product

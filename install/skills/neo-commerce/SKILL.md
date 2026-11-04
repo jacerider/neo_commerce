@@ -208,6 +208,43 @@ keeps working whether or not the page reported anything.
 - `CartFormAlterEvent` — the last word on the cart form, guaranteed to run
   after neo_commerce.
 
+### Wire a product type to the product page starter
+
+`product_page` ships with `neo_install: true` (ejected into the theme like
+`cart_quick`). To lay a product type out with it:
+
+1. **Tree field** — add a `neo_component_tree` field (`field_full`) to the
+   product type and show it, label hidden, in the product's default view
+   display. `ProductHooks` then drops Commerce's injected `variation_*`
+   fields.
+2. **Library entry** — a `neo_component` in the `entity` group targeting
+   `commerce_product` / the bundle, component `<theme>:product_page`. Bind:
+
+   | Prop / slot | Plugin | Setting |
+   |---|---|---|
+   | `breadcrumb` | `breadcrumb` | `hide_current: true`, `hide_home: true` (the neo_commerce builder supplies the trail and the current crumb) |
+   | `heading` | `heading` | `title_entity: true` |
+   | `title_accent` | `entity` | `field: field_title_accent` |
+   | `price` | `entity` | `field: _render`, `render_field: variations.price`, formatter `commerce_price_default` |
+   | `images` | `entity_reference` | `entity: 'variations.field_media:entity'`, `shape_fields: {image: {field: _self}}` |
+   | `description` | `entity` + `formatted_text` | `field: variations.field_body` |
+   | `details` | `entity` | `field: variations.field_details`, `field_assign: true`, `field_properties: {label: first, value: second}` (double_field) |
+   | `related_title` | `entity` | `field: field_category.name` |
+   | slot `buy` | `entity_field` | `field: variations`, `field_plugin: commerce_add_to_cart` |
+   | slot `related` | `related_products` | `limit: 4` |
+
+   Every path through `variations` resolves to the **selected** variation, so
+   the component is marked and follows a variation change.
+3. **Default value** — set the tree field's default (`settings.defaults`) to a
+   tree holding that component, so every new product gets the layout with no
+   Alchemist editing. Leave `allow_custom` on so editors can fill the
+   `below_buy` / `below_tabs` regions per product.
+
+The lightbox is one `neo_modal` group of hidden triggers (one per image) that
+the main image clicks through Alpine refs; the counter therefore counts each
+image once. Its next/prev listeners sit on the inner `<a>` of
+`.neo-modal--next`/`--prev`, not the div.
+
 ## Debugging
 
 | Symptom | Look at |
