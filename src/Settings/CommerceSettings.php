@@ -238,6 +238,36 @@ class CommerceSettings extends SettingsBase {
       '#empty_option' => $this->t('- None -'),
       '#default_value' => $this->getValue('product_related_field'),
     ];
+    $form['products']['product_card_component'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Product card component'),
+      '#description' => $this->t('Renders a product shown in the <em>Card</em> view mode, as <em>provider:name</em>. The theme copy takes over automatically once it is ejected.'),
+      '#default_value' => $this->getValue('product_card_component'),
+    ];
+    $form['products']['product_image_field'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Variation image field'),
+      '#description' => $this->t('A media field on the variation. Its first image is the card image; with none the card shows the first letter of the name.'),
+      '#default_value' => $this->getValue('product_image_field'),
+    ];
+    $form['products']['product_card_image_style'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Card image style'),
+      '#options' => function_exists('image_style_options') ? image_style_options(FALSE) : [],
+      '#empty_option' => $this->t('Original image'),
+      '#default_value' => $this->getValue('product_card_image_style'),
+    ];
+    $form['products']['product_tagline_field'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Product tagline field'),
+      '#default_value' => $this->getValue('product_tagline_field'),
+    ];
+    $form['products']['product_card_options_label'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Choose Options label'),
+      '#description' => $this->t('The card button of a product with several variations, linking to the product page. A product with one variation adds straight to the cart.'),
+      '#default_value' => $this->getValue('product_card_options_label'),
+    ];
     $form['products']['breadcrumb_home'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Start the breadcrumb with Home'),

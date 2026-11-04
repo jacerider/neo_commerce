@@ -69,6 +69,26 @@ reference. It does nothing until a category field is set. The root crumb is
 skipped when its label is empty; Home and the current page crumb are
 switches.
 
+### Starters: product card and product grid
+
+- **`product_card`** (`components/product_card/`, ejected into the theme and
+  claimed into `product_card_component` on install, like `cart_quick`) — a
+  product shown in the **Card** view mode (`commerce_product.card`, shipped)
+  is replaced by this component, built by `ProductCardBuilder`: the default
+  variation's first image (`product_image_field`, styled by
+  `product_card_image_style`) or the name's first letter, the name with its
+  `field_title_accent` set apart, the tagline (`product_tagline_field`) and
+  the price. A product with one enabled variation gets Commerce's add to cart
+  form in the `action` slot, rendered for the `card` view mode so its quantity
+  is hidden and neo_commerce's ajax cart adds one; a product with several gets
+  `options_url`, a "Choose Options" link to its page.
+- **`views.view.neo_commerce_product_grid`** (`config/optional`) — published
+  products as cards, 9 per page with a full pager and a "Showing X-Y of N
+  products" header, sorted by `field_weight` then title, filtered by
+  `field_category` with the **Category term page, with descendants** default
+  argument (`neo_commerce_category`), so a parent category lists its
+  children's products too. The field names are the defaults to adjust.
+
 ## How the cart summary refreshes
 
 Every summary prints the preset it was built from as `data-neo-cart`, and

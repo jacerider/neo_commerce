@@ -13,6 +13,7 @@ use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Template\Attribute;
 use Drupal\neo_alchemist\Entity\Component;
+use Drupal\neo_commerce\Product\ProductCardBuilder;
 use Drupal\neo_commerce\Product\SelectedVariation;
 
 /**
@@ -33,9 +34,12 @@ class ProductHooks {
    *
    * @param \Drupal\neo_commerce\Product\SelectedVariation $selectedVariation
    *   The selected variation resolver.
+   * @param \Drupal\neo_commerce\Product\ProductCardBuilder $cardBuilder
+   *   The product card builder.
    */
   public function __construct(
     protected SelectedVariation $selectedVariation,
+    protected ProductCardBuilder $cardBuilder,
   ) {}
 
   /**
@@ -84,12 +88,31 @@ class ProductHooks {
   /**
    * Implements hook_ENTITY_TYPE_view_alter() for commerce_product.
    *
-   * Commerce injects every variation field into the product build as a
-   * `variation_*` child. A product laid out by a component tree renders the
-   * variation fields it wants itself, so the injected copies are dropped.
+   * A product in the card view mode becomes the product card.
+   *
+   * Otherwise: Commerce injects every variation field into the product
+   * build as a `variation_*` child. A product laid out by a component tree
+   * renders the variation fields it wants itself, so the injected copies are
+   * dropped.
    */
   #[Hook('commerce_product_view_alter')]
   public function productViewAlter(array &$build, ProductInterface $product, EntityViewDisplayInterface $display): void {
+    if (($build['#view_mode'] ?? '') === ProductCardBuilder::VIEW_MODE) {
+      // The card view mode is the product card, whatever its display holds.
+      // It goes in as a child: this runs during the entity's #pre_render, too
+      // late for a replaced #type to pick up its element defaults. The
+      // entity build's cache keys carry over.
+      $card = $this->cardBuilder->build($product);
+      $replacement = ['card' => $card];
+      CacheableMetadata::createFromRenderArray($card)
+        ->merge(CacheableMetadata::createFromRenderArray($build))
+        ->applyTo($replacement);
+      if (isset($build['#cache']['keys'])) {
+        $replacement['#cache']['keys'] = $build['#cache']['keys'];
+      }
+      $build = $replacement;
+      return;
+    }
     $hasTree = FALSE;
     foreach (Element::children($build) as $key) {
       if (!str_starts_with($key, 'variation_') && !empty($build[$key]['#neo_component_tree'])) {

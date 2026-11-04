@@ -57,6 +57,21 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   field is set, and only to terms of the vocabularies that field targets.
   Read with `getActive()` (presets have no conditions, so that is core).
 
+- **[src/Product/ProductCardBuilder.php](web/modules/contrib/neo_commerce/src/Product/ProductCardBuilder.php)** +
+  **[components/product_card/](web/modules/contrib/neo_commerce/components/product_card/)** —
+  a product rendered in the `card` view mode becomes the `product_card`
+  component (ProductHooks nests it as a child: replacing `#type` inside a
+  view alter is too late for element defaults, and renders nothing). One
+  enabled variation → Commerce's add-to-cart lazy builder with view mode
+  `card`, whose quantity `AddToCartFormAlter` hides (quick add, qty 1);
+  several → `options_url` "Choose Options". Settings: `product_card_component`
+  (claimed), `product_image_field`, `product_card_image_style`,
+  `product_tagline_field`, `product_card_options_label`.
+- **`views.view.neo_commerce_product_grid`** (config/optional) — card rows,
+  9/page full pager, result header, weight-then-title, `field_category` with
+  the `neo_commerce_category` default argument (term page + descendants,
+  joined with `+`).
+
 ## The contract that matters
 
 The `cart_quick` component is copied into the theme and owned by the site from

@@ -90,6 +90,17 @@ class CommerceSettingsTest extends CartKernelTestBase {
       'modal_icon',
       'modal_smart_actions',
       'modal_input_focus',
+      'product_category_field',
+      'product_related_field',
+      'product_card_component',
+      'product_image_field',
+      'product_tagline_field',
+      'product_card_image_style',
+      'product_card_options_label',
+      'breadcrumb_home',
+      'breadcrumb_root_label',
+      'breadcrumb_root_link',
+      'breadcrumb_current',
     ];
     sort($expected);
     $actual = array_keys($config);

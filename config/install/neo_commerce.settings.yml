@@ -27,3 +27,8 @@ breadcrumb_home: false
 breadcrumb_root_label: ''
 breadcrumb_root_link: ''
 breadcrumb_current: true
+product_card_component: 'neo_commerce:product_card'
+product_image_field: field_media
+product_tagline_field: field_tagline
+product_card_image_style: ''
+product_card_options_label: 'Choose Options'

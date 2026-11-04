@@ -10,6 +10,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\neo_commerce\Event\AddToCartCleanKeysEvent;
+use Drupal\neo_commerce\Product\ProductCardBuilder;
 use Drupal\neo_settings\SettingsRepositoryInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -52,6 +53,10 @@ class AddToCartFormAlter {
    *   The form id.
    */
   public function alter(array &$form, FormStateInterface $formState, string $formId): void {
+    if ($formState->get('view_mode') === ProductCardBuilder::VIEW_MODE && isset($form['quantity'])) {
+      // A product card adds one at a time: the button is the whole form.
+      $form['quantity']['#access'] = FALSE;
+    }
     $settings = $this->settings->getActive();
     if (!$settings->getValue('add_to_cart_ajax')) {
       return;

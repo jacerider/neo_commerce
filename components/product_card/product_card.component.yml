@@ -1,0 +1,54 @@
+$schema: 'https://git.drupalcode.org/project/drupal/-/raw/10.1.x/core/modules/sdc/src/metadata.schema.json'
+name: 'Product | Card'
+status: stable
+description: 'One product in a grid: image (or a monogram letter), name, tagline, price and a quick add or Choose Options button. Rendered by neo_commerce for a product shown in the "card" view mode.'
+# Source template. `neo: false` keeps this module copy out of the component
+# picker; `neo_install: true` has neo_alchemist copy it into the front theme on
+# install, flipping the copy to `neo: true`. The theme copy is the one you
+# restyle. Strip `neo_install` from that copy -- the installer flips `neo` but
+# leaves the key behind, and a stale one trips drush neo:alchemist:validate.
+neo: false
+neo_install: true
+props:
+  type: object
+  properties:
+    url:
+      type: string
+      title: URL
+      examples: ['/market/bakery/rosemary-focaccia']
+    title:
+      type: string
+      title: Name
+      examples: ['Rosemary Focaccia']
+    title_accent:
+      type: string
+      title: 'Name accent'
+      description: 'The part of the name set apart, when it appears in the name.'
+      examples: ['Focaccia']
+    tagline:
+      type: string
+      title: Tagline
+      examples: ['Baked every morning']
+    letter:
+      type: string
+      title: 'Monogram letter'
+      description: 'Shown in place of the image when the product has none.'
+      examples: ['R']
+    price:
+      type: string
+      title: Price
+      examples: ['$12.00']
+    options_url:
+      type: string
+      title: 'Choose Options URL'
+      description: 'Set instead of the quick add form when the product has several variations.'
+    options_label:
+      type: string
+      title: 'Choose Options label'
+      examples: ['Choose Options']
+slots:
+  image:
+    title: Image
+  action:
+    title: 'Quick add'
+    description: 'The add to cart form, for a product with one variation.'

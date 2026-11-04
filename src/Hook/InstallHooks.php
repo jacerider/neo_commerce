@@ -24,6 +24,11 @@ class InstallHooks {
   const DEFAULT_COMPONENT = 'neo_commerce:' . self::COMPONENT_NAME;
 
   /**
+   * The shipped product card, claimed the same way.
+   */
+  const DEFAULT_CARD_COMPONENT = 'neo_commerce:product_card';
+
+  /**
    * Constructs the hook handler.
    *
    * @param \Drupal\neo_alchemist\ThemeComponentInstaller $installer
@@ -59,7 +64,7 @@ class InstallHooks {
   }
 
   /**
-   * Repoints the cart block at the theme's own copy of the component.
+   * Repoints the cart block and product card at the theme's own copies.
    *
    * The claim sweeps, resolves the theme and only ever upgrades the shipped
    * default; once a site builder has chosen a component their choice stands,
@@ -70,6 +75,11 @@ class InstallHooks {
       self::DEFAULT_COMPONENT,
       'neo_commerce.settings',
       'cart_component',
+    );
+    $this->installer->claimComponent(
+      self::DEFAULT_CARD_COMPONENT,
+      'neo_commerce.settings',
+      'product_card_component',
     );
   }
 

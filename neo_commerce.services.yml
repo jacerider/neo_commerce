@@ -41,6 +41,13 @@ services:
     arguments:
       - '@entity_type.manager'
 
+  neo_commerce.product_card_builder:
+    class: Drupal\neo_commerce\Product\ProductCardBuilder
+    arguments:
+      - '@neo_commerce.settings'
+      - '@entity_type.manager'
+      - '@commerce_price.currency_formatter'
+
   neo_commerce.variation_field_renderer:
     class: Drupal\neo_commerce\Product\VariationFieldRenderer
     arguments:
@@ -85,6 +92,7 @@ services:
     class: Drupal\neo_commerce\Hook\ProductHooks
     arguments:
       - '@neo_commerce.selected_variation'
+      - '@neo_commerce.product_card_builder'
 
   Drupal\neo_commerce\Hook\InstallHooks:
     class: Drupal\neo_commerce\Hook\InstallHooks

@@ -76,6 +76,21 @@ neo_commerce:
     product_related_field:
       type: string
       label: 'Related products field'
+    product_card_component:
+      type: string
+      label: 'Product card component'
+    product_image_field:
+      type: string
+      label: 'Variation image field'
+    product_tagline_field:
+      type: string
+      label: 'Product tagline field'
+    product_card_image_style:
+      type: string
+      label: 'Card image style'
+    product_card_options_label:
+      type: label
+      label: 'Choose Options label'
     breadcrumb_home:
       type: boolean
       label: 'Start the breadcrumb with Home'

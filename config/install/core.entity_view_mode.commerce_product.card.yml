@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - neo_commerce
+  module:
+    - commerce_product
+id: commerce_product.card
+label: Card
+description: 'Rendered as the product card component by neo_commerce.'
+targetEntityType: commerce_product
+cache: true

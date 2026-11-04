@@ -1,0 +1,45 @@
+{#
+  Product | Card — one product in a grid.
+
+  Rendered by neo_commerce's ProductCardBuilder whenever a product is shown in
+  the "card" view mode (the product grid view, related products). Generic
+  markup on purpose: restyle the theme copy.
+
+  The `action` slot holds Commerce's add to cart form, already wired for
+  neo_commerce's ajax cart, and shows only its button. A product with several
+  variations gets `options_url` instead, linking to the product page.
+#}
+{% set parts = title_accent and title_accent in title ? title|split(title_accent, 2) : [] %}
+<article{{ attributes.addClass(['product-card', 'flex', 'flex-col', 'gap-3']) }}>
+  <a href="{{ url }}" class="product-card__media block aspect-square overflow-hidden" tabindex="-1" aria-hidden="true">
+    {% if image %}
+      {{ image }}
+    {% else %}
+      <span class="product-card__monogram flex h-full w-full items-center justify-center text-6xl">{{ letter }}</span>
+    {% endif %}
+  </a>
+  <div class="product-card__body flex flex-1 flex-col gap-1">
+    <h3 class="product-card__title">
+      <a href="{{ url }}">
+        {%- if parts -%}
+          {{ parts[0] }}<em>{{ title_accent }}</em>{{ parts[1] }}
+        {%- else -%}
+          {{ title }}
+        {%- endif -%}
+      </a>
+    </h3>
+    {% if tagline %}
+      <p class="product-card__tagline">{{ tagline }}</p>
+    {% endif %}
+    {% if price %}
+      <p class="product-card__price">{{ price }}</p>
+    {% endif %}
+  </div>
+  <div class="product-card__action">
+    {% if options_url %}
+      <a href="{{ options_url }}" class="btn">{{ options_label }}</a>
+    {% else %}
+      {{ action }}
+    {% endif %}
+  </div>
+</article>
