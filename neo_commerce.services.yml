@@ -55,6 +55,16 @@ services:
     tags:
       - { name: event_subscriber }
 
+  neo_commerce.product_breadcrumb:
+    class: Drupal\neo_commerce\Breadcrumb\ProductBreadcrumbBuilder
+    arguments:
+      - '@neo_commerce.settings'
+      - '@entity_type.manager'
+      - '@entity_field.manager'
+    tags:
+      # Ahead of menu_breadcrumb (1010) and taxonomy's term builder (1002).
+      - { name: breadcrumb_builder, priority: 1050 }
+
   logger.channel.neo_commerce:
     parent: logger.channel_base
     arguments: ['neo_commerce']

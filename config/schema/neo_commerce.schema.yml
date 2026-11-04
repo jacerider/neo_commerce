@@ -70,6 +70,24 @@ neo_commerce:
     cart_link_modal:
       type: boolean
       label: 'Open the cart in a modal from the cart summary link'
+    product_category_field:
+      type: string
+      label: 'Category field'
+    product_related_field:
+      type: string
+      label: 'Related products field'
+    breadcrumb_home:
+      type: boolean
+      label: 'Start the breadcrumb with Home'
+    breadcrumb_root_label:
+      type: label
+      label: 'Breadcrumb root label'
+    breadcrumb_root_link:
+      type: string
+      label: 'Breadcrumb root link'
+    breadcrumb_current:
+      type: boolean
+      label: 'End the breadcrumb with the current product or category'
     modal_preset:
       type: string
       label: 'Preset'

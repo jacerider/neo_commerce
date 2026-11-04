@@ -56,6 +56,19 @@ component tree lives here, not in neo_alchemist:
   a product that has a component tree, and gives a tree field on a variation
   a wrapper so Commerce's replacement class has somewhere to go.
 
+### Product settings
+
+The **Products** tab of `/admin/config/neo/commerce` names the product field
+holding the category (`product_category_field`) and the related products
+field (`product_related_field`), and configures the breadcrumb.
+
+**Breadcrumb** — `ProductBreadcrumbBuilder` (priority 1050) builds
+"[Home /] Root / category lineage / Product" from a product's first category,
+and "[Home /] Root / ancestors / Term" on the page of a term that field can
+reference. It does nothing until a category field is set. The root crumb is
+skipped when its label is empty; Home and the current page crumb are
+switches.
+
 ## How the cart summary refreshes
 
 Every summary prints the preset it was built from as `data-neo-cart`, and

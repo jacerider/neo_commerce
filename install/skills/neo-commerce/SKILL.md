@@ -49,6 +49,14 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   puts on every product); drops injected `variation_*` fields from a product
   with a component tree; wraps a tree field on a variation.
 
+- **[src/Breadcrumb/ProductBreadcrumbBuilder.php](web/modules/contrib/neo_commerce/src/Breadcrumb/ProductBreadcrumbBuilder.php)** —
+  "[Home /] Root / lineage / Product" for products and "[Home /] Root /
+  ancestors / Term" for category terms. Driven by the **Products** settings
+  tab (`product_category_field`, `breadcrumb_home`, `breadcrumb_root_label`,
+  `breadcrumb_root_link`, `breadcrumb_current`); applies only when a category
+  field is set, and only to terms of the vocabularies that field targets.
+  Read with `getActive()` (presets have no conditions, so that is core).
+
 ## The contract that matters
 
 The `cart_quick` component is copied into the theme and owned by the site from

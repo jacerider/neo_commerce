@@ -216,7 +216,75 @@ class CommerceSettings extends SettingsBase {
       '#default_value' => $this->getValue('modal_input_focus'),
     ];
 
+    $form['products'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Products'),
+      '#group' => $group,
+      '#parents' => $parents,
+    ];
+    $form['products']['product_category_field'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Category field'),
+      '#description' => $this->t('The product field holding the category. Its first value decides the breadcrumb and the related products fallback. The product breadcrumb applies only when this is set.'),
+      '#options' => $this->productReferenceFields('taxonomy_term'),
+      '#empty_option' => $this->t('- None -'),
+      '#default_value' => $this->getValue('product_category_field'),
+    ];
+    $form['products']['product_related_field'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Related products field'),
+      '#description' => $this->t('Products an editor picks to show as related. When it is empty, other products from the first category are shown instead.'),
+      '#options' => $this->productReferenceFields('commerce_product'),
+      '#empty_option' => $this->t('- None -'),
+      '#default_value' => $this->getValue('product_related_field'),
+    ];
+    $form['products']['breadcrumb_home'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Start the breadcrumb with Home'),
+      '#default_value' => $this->getValue('breadcrumb_home'),
+    ];
+    $form['products']['breadcrumb_root_label'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Breadcrumb root label'),
+      '#description' => $this->t('The crumb before the category lineage, such as "The Market". Leave empty for none.'),
+      '#default_value' => $this->getValue('breadcrumb_root_label'),
+    ];
+    $form['products']['breadcrumb_root_link'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Breadcrumb root link'),
+      '#description' => $this->t('A path on this site, such as /market.'),
+      '#default_value' => $this->getValue('breadcrumb_root_link'),
+    ];
+    $form['products']['breadcrumb_current'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('End the breadcrumb with the current product or category'),
+      '#default_value' => $this->getValue('breadcrumb_current'),
+    ];
+
     return $form;
+  }
+
+  /**
+   * Lists the product reference fields that target an entity type.
+   *
+   * @param string $targetType
+   *   The referenced entity type.
+   *
+   * @return array
+   *   Field labels keyed by field name.
+   */
+  protected function productReferenceFields(string $targetType): array {
+    $options = [];
+    $fieldManager = \Drupal::service('entity_field.manager');
+    $map = $fieldManager->getFieldMapByFieldType('entity_reference');
+    $storages = $fieldManager->getFieldStorageDefinitions('commerce_product');
+    foreach (array_keys($map['commerce_product'] ?? []) as $name) {
+      $storage = $storages[$name] ?? NULL;
+      if ($storage && !$storage->isBaseField() && $storage->getSetting('target_type') === $targetType) {
+        $options[$name] = $name;
+      }
+    }
+    return $options;
   }
 
   /**

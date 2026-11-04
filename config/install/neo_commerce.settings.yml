@@ -21,3 +21,9 @@ modal_title: 'Shopping cart'
 modal_icon: shopping-cart
 modal_smart_actions: true
 modal_input_focus: false
+product_category_field: ''
+product_related_field: ''
+breadcrumb_home: false
+breadcrumb_root_label: ''
+breadcrumb_root_link: ''
+breadcrumb_current: true
