@@ -181,16 +181,18 @@ class InstallHooksTest extends CartKernelTestBase {
   }
 
   /**
-   * Tests that the module requires an neo_alchemist that carries the claim.
+   * Tests that the module requires a neo_alchemist that carries its seams.
    *
    * Without the constraint a site can install this module against a release
-   * with no claimComponent(), which fatals on install.
+   * with no claimComponent() (a fatal on install), no reference alter hook
+   * (variation bindings read the first variation) or no renderComponent()
+   * (a fatal on every variation change).
    */
   public function testRequiresTheAlchemistCarryingTheClaim(): void {
     $composer = Json::decode($this->moduleFile('composer.json'));
 
     $this->assertSame(
-      '^1.2',
+      '^2.2',
       $composer['require']['jacerider/neo_alchemist']
     );
   }
