@@ -13,6 +13,8 @@
   - Tabs: Description and Details. A tab with no content is not rendered; with
     neither, the tab bar is not either.
   - Regions: `below_buy` under the buy row, `below_tabs` under the tabs.
+    Both are flushed on every side: the column's gap already spaces them,
+    so their components' own section padding would double it.
   - Related: the `related` slot, inside a section that is only printed when
     the slot has content.
 
@@ -122,7 +124,7 @@
     {% endif %}
 
     {% if below_tabs %}
-      <div class="product-page__below-tabs neo-region-flush-x">{{ below_tabs }}</div>
+      <div class="product-page__below-tabs neo-region-flush-x neo-region-flush-y">{{ below_tabs }}</div>
     {% endif %}
 
     {% if related_markup|striptags('<img><a><form>')|trim is not empty %}
