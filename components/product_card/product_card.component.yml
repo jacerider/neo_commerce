@@ -42,6 +42,8 @@ props:
       type: string
       title: 'Choose Options URL'
       description: 'Set instead of the quick add form when the product has several variations.'
+      # Previews have no add to cart form, so the example shows the button.
+      examples: ['/']
     options_label:
       type: string
       title: 'Choose Options label'
