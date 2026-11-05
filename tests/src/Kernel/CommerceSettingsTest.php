@@ -97,7 +97,6 @@ class CommerceSettingsTest extends CartKernelTestBase {
       'product_card_component',
       'product_image_field',
       'product_tagline_field',
-      'product_card_image_style',
       'product_card_options_label',
       'breadcrumb_home',
       'breadcrumb_root_label',

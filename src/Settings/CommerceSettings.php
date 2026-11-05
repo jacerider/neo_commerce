@@ -267,13 +267,6 @@ class CommerceSettings extends SettingsBase {
       '#description' => $this->t('A media field on the variation. Its first image is the card image; with none the card shows the first letter of the name.'),
       '#default_value' => $this->getValue('product_image_field'),
     ];
-    $form['products']['product_card_image_style'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Card image style'),
-      '#options' => function_exists('image_style_options') ? image_style_options(FALSE) : [],
-      '#empty_option' => $this->t('Original image'),
-      '#default_value' => $this->getValue('product_card_image_style'),
-    ];
     $form['products']['product_tagline_field'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Product tagline field'),

@@ -10,6 +10,7 @@ dependencies:
   - neo_settings:neo_settings
   - neo_modal:neo_modal
   - neo_alchemist:neo_alchemist
+  - neo_image:neo_image
   - commerce:commerce_cart
   - commerce:commerce_order
   - commerce:commerce_product

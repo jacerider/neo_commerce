@@ -91,9 +91,6 @@ neo_commerce:
     product_tagline_field:
       type: string
       label: 'Product tagline field'
-    product_card_image_style:
-      type: string
-      label: 'Card image style'
     product_card_options_label:
       type: label
       label: 'Choose Options label'

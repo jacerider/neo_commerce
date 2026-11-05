@@ -86,8 +86,8 @@ switches.
   claimed into `product_card_component` on install, like `cart_quick`) — a
   product shown in the **Card** view mode (`commerce_product.card`, shipped)
   is replaced by this component, built by `ProductCardBuilder`: the default
-  variation's first image (`product_image_field`, styled by
-  `product_card_image_style`) or the name's first letter, the name with its
+  variation's first image (`product_image_field`, passed as an `image` prop
+  that the template crops with `neo_image_style()`) or the name's first letter, the name with its
   `field_title_accent` set apart, the tagline (`product_tagline_field`) and
   the price. A product with one enabled variation gets Commerce's add to cart
   form in the `action` slot, rendered for the `card` view mode so its quantity

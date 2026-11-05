@@ -29,6 +29,10 @@ props:
       type: string
       title: Tagline
       examples: ['Baked every morning']
+    image:
+      type: image
+      title: Image
+      description: 'The default variation''s first image. The template crops it with neo_image to fit the card.'
     letter:
       type: string
       title: 'Monogram letter'
@@ -49,8 +53,6 @@ props:
       title: 'Choose Options label'
       examples: ['Choose Options']
 slots:
-  image:
-    title: Image
   action:
     title: 'Quick add'
     description: 'The add to cart form, for a product with one variation.'

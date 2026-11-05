@@ -77,9 +77,11 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   view alter is too late for element defaults, and renders nothing). One
   enabled variation → Commerce's add-to-cart lazy builder with view mode
   `card`, whose quantity `AddToCartFormAlter` hides (quick add, qty 1);
-  several → `options_url` "Choose Options". Settings: `product_card_component`
-  (claimed), `product_image_field`, `product_card_image_style`,
-  `product_tagline_field`, `product_card_options_label`.
+  several → `options_url` "Choose Options". The image is an `image` **prop**
+  (`{src, alt, width, height}`, src a root-relative path), not a rendered
+  field: the template crops it with `neo_image_style(image.src, {focal: …})`
+  to match its own box. Settings: `product_card_component` (claimed),
+  `product_image_field`, `product_tagline_field`, `product_card_options_label`.
 - **`views.view.neo_commerce_product_grid`** (config/optional) — card rows,
   9/page full pager, result header, weight-then-title, `field_category` with
   the `neo_commerce_category` default argument (term page + descendants,

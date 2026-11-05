@@ -5,6 +5,9 @@
   the "card" view mode (the product grid view, related products). Generic
   markup on purpose: restyle the theme copy.
 
+  The image arrives as data and is cropped here with neo_image, so the crop
+  always matches the box. Change both together.
+
   The `action` slot holds Commerce's add to cart form, already wired for
   neo_commerce's ajax cart, and shows only its button. A product with several
   variations gets `options_url` instead, linking to the product page.
@@ -12,8 +15,8 @@
 {% set parts = title_accent and title_accent in title ? title|split(title_accent, 2) : [] %}
 <article{{ attributes.addClass(['product-card', 'flex', 'flex-col', 'gap-3']) }}>
   <a href="{{ url }}" class="product-card__media block aspect-square overflow-hidden" tabindex="-1" aria-hidden="true">
-    {% if image %}
-      {{ image }}
+    {% if image.src %}
+      {{ neo_image_style(image.src, {focal: {width: 600, height: 600}}, image.alt, '', {class: ['size-full', 'object-cover']}) }}
     {% else %}
       <span class="product-card__monogram flex h-full w-full items-center justify-center text-6xl">{{ letter }}</span>
     {% endif %}

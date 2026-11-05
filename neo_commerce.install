@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file
+ * Install and update hooks for neo_commerce.
+ */
+
+/**
+ * Removes the product_card_image_style setting.
+ *
+ * The card component now receives its image as data and crops it with
+ * neo_image in its own template, so a core image style no longer applies.
+ */
+function neo_commerce_update_10001(): string {
+  $configFactory = \Drupal::configFactory();
+  $cleared = [];
+
+  $names = ['neo_commerce.settings'];
+  foreach ($configFactory->listAll('neo_settings.variation.') as $name) {
+    if ($configFactory->get($name)->get('plugin') === 'neo_commerce') {
+      $names[] = $name;
+    }
+  }
+
+  foreach ($names as $name) {
+    $config = $configFactory->getEditable($name);
+    // Variations nest their values under `settings`; the base config does not.
+    $prefix = str_starts_with($name, 'neo_settings.variation.') ? 'settings.' : '';
+    if ($config->get($prefix . 'product_card_image_style') === NULL) {
+      continue;
+    }
+    $config->clear($prefix . 'product_card_image_style')->save();
+    $cleared[] = $name;
+  }
+
+  return $cleared
+    ? sprintf('Removed product_card_image_style from: %s.', implode(', ', $cleared))
+    : 'No product_card_image_style setting to remove.';
+}

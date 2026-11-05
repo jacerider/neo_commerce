@@ -47,6 +47,7 @@ services:
       - '@neo_commerce.settings'
       - '@entity_type.manager'
       - '@commerce_price.currency_formatter'
+      - '@file_url_generator'
 
   neo_commerce.related_products:
     class: Drupal\neo_commerce\Product\RelatedProducts

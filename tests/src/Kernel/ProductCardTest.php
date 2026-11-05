@@ -104,7 +104,7 @@ class ProductCardTest extends CartKernelTestBase {
     $build = $this->builder->build($this->createProduct('rosemary focaccia', 1));
 
     $this->assertSame('R', $build['#props']['letter']);
-    $this->assertArrayNotHasKey('image', $build['#slots']);
+    $this->assertArrayNotHasKey('image', $build['#props']);
   }
 
   /**
