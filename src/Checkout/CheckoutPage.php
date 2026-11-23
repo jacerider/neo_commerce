@@ -6,9 +6,11 @@ namespace Drupal\neo_commerce\Checkout;
 
 use CommerceGuys\Intl\Formatter\CurrencyFormatterInterface;
 use Drupal\commerce_order\Entity\OrderInterface;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Render\ElementInfoManagerInterface;
 use Drupal\Core\Security\TrustedCallbackInterface;
+use Drupal\neo_commerce\Cart\CartPageBuilder;
 use Drupal\neo_settings\SettingsRepositoryInterface;
 
 /**
@@ -42,12 +44,15 @@ class CheckoutPage implements TrustedCallbackInterface {
    *   The currency formatter.
    * @param \Drupal\Core\Render\ElementInfoManagerInterface $elementInfo
    *   The element info manager.
+   * @param \Drupal\neo_commerce\Cart\CartPageBuilder $cartPageBuilder
+   *   The cart page builder, for the summary lines.
    */
   public function __construct(
     protected SettingsRepositoryInterface $settings,
     protected CheckoutCopy $copy,
     protected CurrencyFormatterInterface $currencyFormatter,
     protected ElementInfoManagerInterface $elementInfo,
+    protected CartPageBuilder $cartPageBuilder,
   ) {}
 
   /**
@@ -93,6 +98,19 @@ class CheckoutPage implements TrustedCallbackInterface {
         'total' => $total,
       ],
     ];
+    if (isset($form['sidebar']['order_summary']['summary'])) {
+      $cacheability = new CacheableMetadata();
+      $form['sidebar']['order_summary']['summary'] = [
+        '#theme' => 'neo_commerce_checkout_summary',
+        '#items' => $this->cartPageBuilder->summaryItems($order, $cacheability),
+        '#totals' => $order->get('total_price')->view([
+          'label' => 'hidden',
+          'type' => 'commerce_order_total_summary',
+        ]),
+      ];
+      $cacheability->applyTo($form['sidebar']['order_summary']['summary']);
+    }
+
     $form['#pre_render'][] = [static::class, 'preRender'];
     foreach ($paneIds as $paneId) {
       if (isset($form[$paneId]['#type'])) {

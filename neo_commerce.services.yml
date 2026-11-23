@@ -89,6 +89,7 @@ services:
       - '@neo_commerce.checkout_copy'
       - '@commerce_price.currency_formatter'
       - '@element_info'
+      - '@neo_commerce.cart_page_builder'
 
   neo_commerce.cart_copy:
     class: Drupal\neo_commerce\Cart\CartCopy

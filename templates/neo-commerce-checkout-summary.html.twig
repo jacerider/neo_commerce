@@ -1,0 +1,37 @@
+{#
+/**
+ * @file
+ * The order summary on the single-page checkout.
+ *
+ * Replaces the order summary pane's view on that page, so it is redrawn with
+ * the pane whenever the order changes (shipping, a coupon, a gift card).
+ *
+ * Available variables:
+ * - items: One per order line: title, meta (the tagline field, may be
+ *   empty), total (formatted), count (quantity).
+ * - totals: Commerce's order total summary (subtotal, adjustments, total).
+ *
+ * Override in the theme to restyle.
+ */
+#}
+<div class="neo-checkout-summary">
+  <ul class="neo-checkout-summary__items">
+    {% for item in items %}
+      <li class="neo-checkout-summary__item">
+        <span class="neo-checkout-summary__count" aria-label="{{ 'Quantity'|t }}">{{ item.count }}</span>
+        <span class="neo-checkout-summary__body">
+          <span class="neo-checkout-summary__line">
+            <span class="neo-checkout-summary__title">{{ item.title }}</span>
+            <span class="neo-checkout-summary__total">{{ item.total }}</span>
+          </span>
+          {% if item.meta %}
+            <span class="neo-checkout-summary__meta">{{ item.meta }}</span>
+          {% endif %}
+        </span>
+      </li>
+    {% endfor %}
+  </ul>
+  {% if totals %}
+    <div class="neo-checkout-summary__totals">{{ totals }}</div>
+  {% endif %}
+</div>

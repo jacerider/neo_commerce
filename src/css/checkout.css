@@ -49,3 +49,29 @@
 .neo-radio-cards__toggle[hidden] {
   display: none;
 }
+
+/* The summary lines: a quantity badge, the name and total on one line, the
+   meta line under them. */
+.neo-checkout-summary__items {
+  @apply m-0 list-none p-0;
+}
+
+.neo-checkout-summary__item {
+  @apply flex gap-4 py-3;
+}
+
+.neo-checkout-summary__count {
+  @apply inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full border px-1.5 text-xs tabular-nums;
+}
+
+.neo-checkout-summary__body {
+  @apply min-w-0 grow;
+}
+
+.neo-checkout-summary__line {
+  @apply flex items-baseline justify-between gap-3;
+}
+
+.neo-checkout-summary__meta {
+  @apply block text-sm italic opacity-70;
+}

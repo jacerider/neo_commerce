@@ -33,7 +33,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   display_label: new TranslatableMarkup('Your details'),
   admin_description: new TranslatableMarkup('The email for the order, with an inline log in for returning customers. Made for the single-page checkout.'),
   default_step: '_disabled',
-  wrapper_element: 'container',
+  wrapper_element: 'fieldset',
 )]
 class ContactDetails extends CheckoutPaneBase implements TrustedCallbackInterface {
 

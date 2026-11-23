@@ -377,6 +377,42 @@ class CartPageBuilder {
   }
 
   /**
+   * Returns the order's lines as plain data, for an order summary.
+   *
+   * The same name, meta line and totals as the cart lines, without their
+   * controls, for the single-page checkout's summary.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
+   * @param \Drupal\Core\Cache\CacheableMetadata $cacheability
+   *   Collects the lines' cacheability.
+   *
+   * @return array[]
+   *   One array per line: title, meta, total, count.
+   */
+  public function summaryItems(OrderInterface $order, CacheableMetadata $cacheability): array {
+    $field = (string) $this->settings->getActive()
+      ->getValue('product_tagline_field');
+    $items = [];
+    foreach ($order->getItems() as $item) {
+      $cacheability->addCacheableDependency($item);
+      $variation = $item->getPurchasedEntity();
+      $sources = [];
+      if ($variation instanceof ProductVariationInterface) {
+        $cacheability->addCacheableDependency($variation);
+        $sources = array_filter([$variation, $variation->getProduct()]);
+      }
+      $items[] = [
+        'title' => (string) $item->label(),
+        'meta' => $this->firstString($sources, $field),
+        'total' => $this->format($item->getTotalPrice()),
+        'count' => (int) (float) $item->getQuantity(),
+      ];
+    }
+    return $items;
+  }
+
+  /**
    * Builds one line.
    *
    * @param \Drupal\commerce_order\Entity\OrderItemInterface $item

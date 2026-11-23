@@ -14,6 +14,21 @@ use Drupal\neo_commerce\Plugin\Commerce\CheckoutFlow\SinglePage;
 class CheckoutHooks {
 
   /**
+   * Implements hook_theme().
+   */
+  #[Hook('theme')]
+  public function theme(): array {
+    return [
+      'neo_commerce_checkout_summary' => [
+        'variables' => [
+          'items' => [],
+          'totals' => NULL,
+        ],
+      ],
+    ];
+  }
+
+  /**
    * Implements hook_commerce_inline_form_PLUGIN_ID_alter().
    *
    * Commerce offers a signed-in shopper's saved addresses as a select. On the
