@@ -210,7 +210,9 @@ class CheckoutPage implements TrustedCallbackInterface {
    *   theme to draw as cards and the page script to fold to the chosen one.
    * - Commerce Shipping's pane is split into its two parts, the address and
    *   the method, so they can sit in separate cards as in the design. The
-   *   method's heading is the rate field's own label.
+   *   method's heading is the rate field's own label. Until there is an
+   *   address to rate there is no method to show, so the split waits for
+   *   the shipments to hold something.
    *
    * @param array $element
    *   The pane.
@@ -221,7 +223,10 @@ class CheckoutPage implements TrustedCallbackInterface {
   public static function preRenderPane(array $element): array {
     static::markRadioCards($element);
 
-    if (isset($element['shipping_profile'], $element['shipments'])) {
+    if (
+      isset($element['shipping_profile'], $element['shipments']) &&
+      Element::getVisibleChildren($element['shipments'])
+    ) {
       $element['neo_shipping_address'] = [
         '#type' => 'container',
         '#attributes' => ['class' => ['neo-checkout-shipping__address']],

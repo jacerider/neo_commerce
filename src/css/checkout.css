@@ -16,6 +16,13 @@
   display: none !important;
 }
 
+/* The message and error summary areas take no room while empty, so the
+   first card lines up with the summary. */
+#neo-checkout-messages,
+#neo-checkout-error-summary {
+  margin-block: 0;
+}
+
 /* Folded on phones once the script has run. */
 @media (max-width: 1023.98px) {
   [data-neo-checkout-summary][data-collapsed] {
