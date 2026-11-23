@@ -48,6 +48,9 @@ services:
       - '@neo_commerce.cart_copy'
       - '@commerce_price.currency_formatter'
       - '@file_url_generator'
+      - '@commerce_cart.cart_provider'
+      - '@entity_type.manager'
+      - '@string_translation'
 
   neo_commerce.cart_copy:
     class: Drupal\neo_commerce\Cart\CartCopy
@@ -142,3 +145,8 @@ services:
     class: Drupal\neo_commerce\Hook\InstallHooks
     arguments:
       - '@neo_alchemist.theme_component_installer'
+
+  neo_commerce.route_subscriber:
+    class: Drupal\neo_commerce\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }

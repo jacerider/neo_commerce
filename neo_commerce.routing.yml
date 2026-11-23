@@ -1,0 +1,14 @@
+# One cart, by order id: what the cart overview's "View cart" opens, and what
+# the cart modal opens after an add. Only the current shopper's own carts.
+neo_commerce.cart_order:
+  path: '/cart/{commerce_order}'
+  defaults:
+    _controller: '\Drupal\neo_commerce\Controller\CartPageController::order'
+    _title: 'Shopping cart'
+  requirements:
+    _custom_access: '\Drupal\neo_commerce\Controller\CartPageController::access'
+    commerce_order: \d+
+  options:
+    parameters:
+      commerce_order:
+        type: entity:commerce_order

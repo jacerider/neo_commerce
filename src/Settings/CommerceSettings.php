@@ -398,7 +398,7 @@ class CommerceSettings extends SettingsBase {
     ) + [
       '#type' => 'details',
       '#title' => $this->t('Overview copy'),
-      '#description' => $this->t('The page a shopper with more than one cart sees at /cart, and the empty state when every cart is empty.'),
+      '#description' => $this->t('The page a shopper with more than one cart sees at /cart, the empty state when every cart is empty, and the link back to it from each cart.'),
     ];
 
     $types = (array) $this->getValue('cart_copy_types');
@@ -499,6 +499,8 @@ class CommerceSettings extends SettingsBase {
       'empty_text' => $this->t('Empty text'),
       'empty_cta_label' => $this->t('Empty button label'),
       'empty_cta_url' => $this->t('Empty button link'),
+      'view_label' => $this->t('View cart button label'),
+      'back_label' => $this->t('Back link label'),
     ];
     $elements = [];
     foreach ($labels as $key => $title) {

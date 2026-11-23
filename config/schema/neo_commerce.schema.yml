@@ -173,6 +173,12 @@ neo_commerce:
         empty_cta_url:
           type: string
           label: 'Empty button link'
+        view_label:
+          type: label
+          label: 'View cart label'
+        back_label:
+          type: label
+          label: 'Back link label'
 
 # The copy one cart page prints. The site-wide `cart_copy` holds the
 # defaults; each `cart_copy_types` entry holds an order type's overrides, and

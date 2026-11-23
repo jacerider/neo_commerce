@@ -62,3 +62,5 @@ cart_overview:
   empty_text: ''
   empty_cta_label: 'Continue shopping'
   empty_cta_url: ''
+  view_label: 'View cart'
+  back_label: 'Back to your cart'

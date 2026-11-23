@@ -37,6 +37,12 @@
     </header>
   {% endif %}
 
+  {% if back_url and back_label %}
+    <p class="cart-page__back mb-6 text-center">
+      <a href="{{ back_url }}" class="text-xs font-semibold uppercase tracking-widest">{{ back_label }}</a>
+    </p>
+  {% endif %}
+
   {% if empty %}
     <div class="cart-page__empty border px-6 py-14 text-center">
       {% if empty_title %}
@@ -80,5 +86,9 @@
         {% endif %}
       </aside>
     </div>
+  {% endif %}
+
+  {% if explainer %}
+    <div class="cart-page__explainer mx-auto mt-10 max-w-xl text-center opacity-80">{{ explainer }}</div>
   {% endif %}
 </div>

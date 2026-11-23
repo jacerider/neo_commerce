@@ -1,0 +1,112 @@
+$schema: 'https://git.drupalcode.org/project/drupal/-/raw/10.1.x/core/modules/sdc/src/metadata.schema.json'
+name: 'Cart | Overview'
+status: stable
+description: 'Every cart a shopper holds, one card each, at /cart when there is more than one; and the empty state when there is none.'
+# Source template. `neo: false` keeps this module copy out of the component
+# picker; `neo_install: true` has neo_alchemist copy it into the front theme on
+# install, flipping the copy to `neo: true`. The theme copy is the one you
+# restyle. Strip `neo_install` from that copy -- the installer flips `neo` but
+# leaves the key behind, and a stale one trips drush neo:alchemist:validate.
+neo: false
+neo_install: true
+props:
+  type: object
+  properties:
+    kicker:
+      type: string
+      title: Kicker
+      examples: ['Your Basket']
+    title:
+      type: string
+      title: Title
+      examples: ['Your cart']
+    title_tag:
+      type: string
+      title: 'Title tag'
+      enum: [h1, h2]
+      examples: [h1]
+    intro:
+      type: string
+      title: Intro
+      examples: ['Market goods and catering are prepared and delivered separately, so each checks out on its own.']
+    carts:
+      type: array
+      title: Carts
+      description: 'One card per non-empty cart. `notice` may hold filtered markup (strong, em, links) and prints as is.'
+      items:
+        type: object
+        properties:
+          title:
+            type: string
+          count:
+            type: integer
+          count_text:
+            type: string
+          subtotal:
+            type: string
+          notice:
+            type: string
+          notice_icon:
+            type: string
+          thumbnails:
+            type: array
+            items:
+              type: object
+              properties:
+                src:
+                  type: string
+                alt:
+                  type: string
+                title:
+                  type: string
+                quantity:
+                  type: integer
+          more:
+            type: integer
+            description: 'Lines beyond the thumbnail limit, for a "+N" chip.'
+          continue_label:
+            type: string
+          continue_url:
+            type: string
+          view_label:
+            type: string
+          view_url:
+            type: string
+      examples:
+        - - title: Market
+            count: 3
+            count_text: '3 items'
+            subtotal: '$69.50'
+            notice: ''
+            notice_icon: ''
+            thumbnails: []
+            more: 0
+            continue_label: 'Continue shopping'
+            continue_url: '/'
+            view_label: 'View cart'
+            view_url: '/cart/1'
+    empty:
+      type: boolean
+      title: Empty
+      description: 'No cart holds anything: show the empty state.'
+      examples: [false]
+    empty_title:
+      type: string
+      title: 'Empty title'
+      examples: ['Your cart is empty']
+    empty_text:
+      type: string
+      title: 'Empty text'
+      examples: ['A little olive oil, some fresh focaccia, a tray for the table…']
+    empty_cta_label:
+      type: string
+      title: 'Empty button label'
+      examples: ['Continue shopping']
+    empty_cta_url:
+      type: string
+      title: 'Empty button URL'
+      examples: ['/']
+slots:
+  explainer:
+    title: Explainer
+    description: 'Why each cart checks out on its own. Given only with more than one cart. Already filtered.'

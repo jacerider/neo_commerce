@@ -74,6 +74,16 @@ props:
       type: string
       title: 'Empty button URL'
       examples: ['/']
+    back_label:
+      type: string
+      title: 'Back link label'
+      description: 'Set, with back_url, only when the shopper has more than one cart.'
+      examples: ['Back to your cart']
+    back_url:
+      type: string
+      title: 'Back link URL'
+      description: 'The cart overview. Empty when the shopper has one cart.'
+      examples: ['/cart']
     item_count:
       type: integer
       title: 'Item count'
@@ -95,3 +105,6 @@ slots:
   update:
     title: 'Update button'
     description: 'The cart form''s update button. MUST be printed: it is the submit the quantity controls use. Hide it visually when quantities apply immediately; never remove it.'
+  explainer:
+    title: Explainer
+    description: 'Why each cart checks out on its own. Given only when the shopper has more than one cart. Already filtered.'

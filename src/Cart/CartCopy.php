@@ -57,6 +57,8 @@ class CartCopy {
     'empty_text',
     'empty_cta_label',
     'empty_cta_url',
+    'view_label',
+    'back_label',
   ];
 
   /**

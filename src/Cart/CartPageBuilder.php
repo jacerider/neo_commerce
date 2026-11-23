@@ -7,14 +7,18 @@ namespace Drupal\neo_commerce\Cart;
 use CommerceGuys\Intl\Formatter\CurrencyFormatterInterface;
 use Drupal\commerce_cart\Plugin\views\field\EditQuantity;
 use Drupal\commerce_cart\Plugin\views\field\RemoveButton;
+use Drupal\commerce_cart\CartProviderInterface;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_order\Entity\OrderItemInterface;
 use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\ProductVariationInterface;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Render\Markup;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\Core\Url;
 use Drupal\neo_commerce\Product\ImageDataTrait;
 use Drupal\neo_settings\SettingsRepositoryInterface;
@@ -40,6 +44,7 @@ use Drupal\views\ViewExecutable;
 class CartPageBuilder {
 
   use ImageDataTrait;
+  use StringTranslationTrait;
 
   /**
    * Constructs the builder.
@@ -52,13 +57,187 @@ class CartPageBuilder {
    *   The currency formatter.
    * @param \Drupal\Core\File\FileUrlGeneratorInterface $fileUrlGenerator
    *   The file URL generator.
+   * @param \Drupal\commerce_cart\CartProviderInterface $cartProvider
+   *   The cart provider.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
+   * @param \Drupal\Core\StringTranslation\TranslationInterface $stringTranslation
+   *   The string translation service.
    */
   public function __construct(
     protected SettingsRepositoryInterface $settings,
     protected CartCopy $copy,
     protected CurrencyFormatterInterface $currencyFormatter,
     protected FileUrlGeneratorInterface $fileUrlGenerator,
-  ) {}
+    protected CartProviderInterface $cartProvider,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    TranslationInterface $stringTranslation,
+  ) {
+    $this->stringTranslation = $stringTranslation;
+  }
+
+  /**
+   * Returns the current shopper's carts that hold something.
+   *
+   * @return \Drupal\commerce_order\Entity\OrderInterface[]
+   *   The carts, keyed by order id.
+   */
+  public function nonEmptyCarts(): array {
+    return array_filter(
+      $this->cartProvider->getCarts(),
+      static fn (OrderInterface $cart): bool => $cart->hasItems()
+    );
+  }
+
+  /**
+   * Builds one cart's page, as /cart and /cart/{order} show it.
+   *
+   * A cart with items is Commerce's cart form view, which the cart form
+   * alter renders through the cart page component. One without is the
+   * component's empty state; there is no form to build.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The cart.
+   *
+   * @return array
+   *   A render array.
+   */
+  public function cart(OrderInterface $order): array {
+    if (!$order->hasItems()) {
+      return $this->buildEmpty($order);
+    }
+    /** @var \Drupal\commerce_order\Entity\OrderTypeInterface|null $type */
+    $type = $this->entityTypeManager
+      ->getStorage('commerce_order_type')
+      ->load($order->bundle());
+    $view = $type
+      ? $type->getThirdPartySetting('commerce_cart', 'cart_form_view', 'commerce_cart_form')
+      : 'commerce_cart_form';
+    $build = [
+      '#prefix' => '<div class="cart cart-form">',
+      '#suffix' => '</div>',
+      '#type' => 'view',
+      '#name' => $view,
+      '#arguments' => [$order->id()],
+      '#embed' => TRUE,
+    ];
+    (new CacheableMetadata())
+      ->addCacheableDependency($order)
+      ->addCacheContexts(['user', 'session'])
+      ->applyTo($build);
+    return $build;
+  }
+
+  /**
+   * Builds the overview of several carts, or the empty state for none.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface[] $carts
+   *   The non-empty carts to show.
+   *
+   * @return array
+   *   The cart overview component.
+   */
+  public function overview(array $carts): array {
+    $settings = $this->settings->getActive();
+    $copy = $this->copy->overview();
+    $cacheability = (new CacheableMetadata())
+      ->addCacheContexts(['user', 'session'])
+      ->addCacheTags(['config:neo_commerce.settings']);
+
+    $cards = [];
+    foreach ($carts as $cart) {
+      $cacheability->addCacheableDependency($cart);
+      $cards[] = $this->card($cart, $copy, $cacheability);
+    }
+
+    $build = [
+      '#type' => 'component',
+      '#component' => (string) $settings->getValue('cart_overview_component'),
+      '#props' => [
+        'kicker' => $copy['kicker'],
+        'title' => $copy['title'],
+        'title_tag' => 'h1',
+        'intro' => $copy['intro'],
+        'carts' => $cards,
+        'empty' => $cards === [],
+        'empty_title' => $copy['empty_title'],
+        'empty_text' => $copy['empty_text'],
+        'empty_cta_label' => $copy['empty_cta_label'],
+        'empty_cta_url' => $this->href($copy['empty_cta_url'], $cacheability),
+      ],
+      '#slots' => [],
+    ];
+    $explainer = $this->copy->explainer();
+    if ($explainer && count($cards) > 1) {
+      $build['#slots']['explainer'] = ['#markup' => $explainer];
+    }
+    $cacheability->applyTo($build);
+    return $build;
+  }
+
+  /**
+   * Builds one cart's card on the overview.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $cart
+   *   The cart.
+   * @param array $overview
+   *   The overview copy.
+   * @param \Drupal\Core\Cache\CacheableMetadata $cacheability
+   *   Collects the card's dependencies.
+   *
+   * @return array
+   *   The card data.
+   */
+  protected function card(OrderInterface $cart, array $overview, CacheableMetadata $cacheability): array {
+    $settings = $this->settings->getActive();
+    $copy = $this->copy->forOrderType($cart->bundle());
+    $limit = max(1, (int) $settings->getValue('cart_overview_thumbnail_limit'));
+    $field = (string) $settings->getValue('product_image_field');
+
+    $items = $cart->getItems();
+    $thumbnails = [];
+    foreach (array_slice($items, 0, $limit) as $item) {
+      $cacheability->addCacheableDependency($item);
+      $variation = $item->getPurchasedEntity();
+      $sources = [$variation];
+      if ($variation instanceof ProductVariationInterface) {
+        $sources[] = $variation->getProduct();
+      }
+      $image = NULL;
+      foreach (array_filter($sources) as $source) {
+        $image = $this->imageData($source, $field, $cacheability);
+        if ($image) {
+          break;
+        }
+      }
+      $thumbnails[] = [
+        'src' => $image['src'] ?? '',
+        'alt' => $image['alt'] ?? (string) $item->label(),
+        'title' => (string) $item->label(),
+        'quantity' => (int) (float) $item->getQuantity(),
+      ];
+    }
+
+    $count = $this->itemCount($cart);
+    $subtotal = $cart->getSubtotalPrice();
+    return [
+      'title' => $this->copy->cardTitle($cart->bundle()),
+      'count' => $count,
+      'count_text' => (string) $this->formatPlural($count, '1 item', '@count items'),
+      'subtotal' => $this->format($subtotal),
+      'notice' => $copy['notice'],
+      'notice_icon' => $copy['notice_icon'],
+      'thumbnails' => $thumbnails,
+      'more' => max(0, count($items) - $limit),
+      'continue_label' => $copy['continue_label'],
+      'continue_url' => $this->href($copy['continue_url'], $cacheability),
+      'view_label' => $overview['view_label'],
+      'view_url' => $this->href(
+        Url::fromRoute('neo_commerce.cart_order', ['commerce_order' => $cart->id()]),
+        $cacheability
+      ),
+    ];
+  }
 
   /**
    * Builds the page for a cart rendered by the cart views form.
@@ -164,6 +343,21 @@ class CartPageBuilder {
     ];
     if ($copy['notice'] !== '') {
       $build['#slots']['notice'] = ['#markup' => $copy['notice']];
+    }
+
+    // With more than one cart, /cart is the overview, so every cart page is
+    // one of several: link back, and say why they check out apart.
+    $cacheability->addCacheContexts(['user', 'session']);
+    if (count($this->nonEmptyCarts()) > 1) {
+      $build['#props']['back_label'] = $this->copy->overview()['back_label'];
+      $build['#props']['back_url'] = $this->href(
+        Url::fromRoute('commerce_cart.page'),
+        $cacheability
+      );
+      $explainer = $this->copy->explainer();
+      if ($explainer) {
+        $build['#slots']['explainer'] = ['#markup' => $explainer];
+      }
     }
     return $build;
   }
