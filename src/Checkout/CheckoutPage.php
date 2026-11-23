@@ -210,7 +210,8 @@ class CheckoutPage implements TrustedCallbackInterface {
    *   theme to draw as cards and the page script to fold to the chosen one.
    * - Commerce Shipping's pane is split into its two parts, the address and
    *   the method, so they can sit in separate cards as in the design. The
-   *   method's heading is the rate field's own label. Until there is an
+   *   address part carries the pane's heading; the method's heading is the
+   *   rate field's own label. Until there is an
    *   address to rate there is no method to show, so the split waits for
    *   the shipments to hold something.
    *
@@ -227,12 +228,17 @@ class CheckoutPage implements TrustedCallbackInterface {
       isset($element['shipping_profile'], $element['shipments']) &&
       Element::getVisibleChildren($element['shipments'])
     ) {
+      // The pane's own heading moves onto the address part, and the pane
+      // becomes a plain wrapper. It keeps its id, so an ajax redraw still
+      // finds it.
       $element['neo_shipping_address'] = [
-        '#type' => 'container',
+        '#type' => 'fieldset',
+        '#title' => $element['#title'] ?? NULL,
         '#attributes' => ['class' => ['neo-checkout-shipping__address']],
         '#weight' => -100,
         'shipping_profile' => $element['shipping_profile'],
       ];
+      $element['#theme_wrappers'] = ['container'];
       $element['neo_shipping_method'] = [
         '#type' => 'container',
         '#attributes' => ['class' => ['neo-checkout-shipping__method']],

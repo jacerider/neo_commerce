@@ -306,6 +306,15 @@ slot once (`errors`, `details`, `shipping`, `payment`, `extra`, `actions`,
 `neo-commerce-checkout-summary.html.twig`, overridable in the theme. Hide
 the page title block on `/checkout/*`.
 
+The `shipping` slot is one pane holding two parts. Once there are rates,
+the pane's wrapper is a plain `div.neo-checkout-shipping` (it keeps its id
+for ajax), with `.neo-checkout-shipping__address` (a fieldset carrying the
+pane's heading) and `.neo-checkout-shipping__method` (the rate field, its
+label the heading). To draw them as two cards, let the section step aside
+with `.checkout-page__section:has(.neo-checkout-shipping)` and frame each
+part. Before an address is rated there is no method part and the pane stays
+a normal fieldset.
+
 Apple Pay and Google Pay show inside the Payment Element when the Stripe
 account allows them: turn Apple Pay on in the Stripe dashboard and register
 the production domain with Stripe. Nothing in code.
