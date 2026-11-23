@@ -18,11 +18,15 @@
   The title is the page's H1 (`title_tag`). Hide the theme's page title block
   on cart pages so the page has one.
 
+  `compact` is the cart modal: the modal has its own title, so there is no
+  page head, the summary sits under the lines, and the explainer is left
+  out. The back link stays, as the way to the other carts.
+
   Own this file: it is copied into your theme on install and yours to restyle
   from there. Run `drush cr` after editing.
 #}
-<div{{ attributes.addClass(['cart-page']) }}>
-  {% if kicker or title or intro %}
+<div{{ attributes.addClass(['cart-page', compact ? 'cart-page--compact']) }}>
+  {% if not compact and (kicker or title or intro) %}
     <header class="cart-page__head mb-8 text-center">
       {% if kicker %}
         <p class="cart-page__kicker mb-3 text-xs font-semibold uppercase tracking-widest text-accent">{{ kicker }}</p>
@@ -56,7 +60,7 @@
       {% endif %}
     </div>
   {% else %}
-    <div class="cart-page__layout grid items-start gap-8 lg:grid-cols-[1.35fr_0.65fr]">
+    <div class="cart-page__layout grid items-start gap-8 {{ compact ? '' : 'lg:grid-cols-[1.35fr_0.65fr]' }}">
       <section class="cart-page__lines border">
         {% if notice %}
           <div class="cart-page__notice m-6 mb-0 flex items-start gap-2 border p-4">
@@ -71,8 +75,10 @@
         </div>
       </section>
 
-      <aside class="cart-page__summary border p-4 sm:p-6 lg:sticky lg:top-24">
-        <h2 class="mb-5 text-2xl">{{ 'Order Summary'|t }}</h2>
+      <aside class="cart-page__summary border p-4 sm:p-6 {{ compact ? '' : 'lg:sticky lg:top-24' }}">
+        {% if not compact %}
+          <h2 class="mb-5 text-2xl">{{ 'Order Summary'|t }}</h2>
+        {% endif %}
         <div class="cart-page__totals mb-4 border-b pb-4">{{ summary }}</div>
         {% if footnote %}
           <p class="cart-page__footnote mb-4 text-sm italic opacity-70">{{ footnote }}</p>
@@ -88,7 +94,7 @@
     </div>
   {% endif %}
 
-  {% if explainer %}
+  {% if explainer and not compact %}
     <div class="cart-page__explainer mx-auto mt-10 max-w-xl text-center opacity-80">{{ explainer }}</div>
   {% endif %}
 </div>

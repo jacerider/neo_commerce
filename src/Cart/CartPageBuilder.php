@@ -98,13 +98,17 @@ class CartPageBuilder {
    *
    * @param \Drupal\commerce_order\Entity\OrderInterface $order
    *   The cart.
+   * @param bool $compact
+   *   Whether to build the compact layout. Only the empty state reads it
+   *   here: a cart with items is the cart form, which the cart form alter
+   *   builds compact from the request itself.
    *
    * @return array
    *   A render array.
    */
-  public function cart(OrderInterface $order): array {
+  public function cart(OrderInterface $order, bool $compact = FALSE): array {
     if (!$order->hasItems()) {
-      return $this->buildEmpty($order);
+      return $this->buildEmpty($order, $compact);
     }
     /** @var \Drupal\commerce_order\Entity\OrderTypeInterface|null $type */
     $type = $this->entityTypeManager
@@ -133,11 +137,13 @@ class CartPageBuilder {
    *
    * @param \Drupal\commerce_order\Entity\OrderInterface[] $carts
    *   The non-empty carts to show.
+   * @param bool $compact
+   *   Whether to build the compact layout, for the cart modal.
    *
    * @return array
    *   The cart overview component.
    */
-  public function overview(array $carts): array {
+  public function overview(array $carts, bool $compact = FALSE): array {
     $settings = $this->settings->getActive();
     $copy = $this->copy->overview();
     $cacheability = (new CacheableMetadata())
@@ -164,6 +170,7 @@ class CartPageBuilder {
         'empty_text' => $copy['empty_text'],
         'empty_cta_label' => $copy['empty_cta_label'],
         'empty_cta_url' => $this->href($copy['empty_cta_url'], $cacheability),
+        'compact' => $compact,
       ],
       '#slots' => [],
     ];
@@ -251,11 +258,13 @@ class CartPageBuilder {
    * @param array $actions
    *   Placeholders for the form's action buttons, keyed `checkout` and
    *   `update`.
+   * @param bool $compact
+   *   Whether to build the compact layout, for the cart modal.
    *
    * @return array
    *   The cart page component.
    */
-  public function build(OrderInterface $order, ViewExecutable $view, array $placeholders, array $actions = []): array {
+  public function build(OrderInterface $order, ViewExecutable $view, array $placeholders, array $actions = [], bool $compact = FALSE): array {
     $cacheability = $this->baseCacheability($order);
     [$quantityName, $removeName] = $this->formElementNames($view);
 
@@ -273,7 +282,7 @@ class CartPageBuilder {
       );
     }
 
-    $build = $this->page($order, $cacheability, $lines === []);
+    $build = $this->page($order, $cacheability, $lines === [], $compact);
     $build['#slots']['lines'] = $lines;
     $build['#slots']['summary'] = $order->get('total_price')->view([
       'label' => 'hidden',
@@ -293,13 +302,15 @@ class CartPageBuilder {
    *
    * @param \Drupal\commerce_order\Entity\OrderInterface $order
    *   The cart.
+   * @param bool $compact
+   *   Whether to build the compact layout, for the cart modal.
    *
    * @return array
    *   The cart page component, in its empty state.
    */
-  public function buildEmpty(OrderInterface $order): array {
+  public function buildEmpty(OrderInterface $order, bool $compact = FALSE): array {
     $cacheability = $this->baseCacheability($order);
-    $build = $this->page($order, $cacheability, TRUE);
+    $build = $this->page($order, $cacheability, TRUE, $compact);
     $cacheability->applyTo($build);
     return $build;
   }
@@ -313,11 +324,13 @@ class CartPageBuilder {
    *   Collects the links' cacheability.
    * @param bool $empty
    *   Whether the cart has no lines.
+   * @param bool $compact
+   *   Whether to build the compact layout.
    *
    * @return array
    *   The component.
    */
-  protected function page(OrderInterface $order, CacheableMetadata $cacheability, bool $empty): array {
+  protected function page(OrderInterface $order, CacheableMetadata $cacheability, bool $empty, bool $compact = FALSE): array {
     $copy = $this->copy->forOrderType($order->bundle());
     $build = [
       '#type' => 'component',
@@ -338,6 +351,7 @@ class CartPageBuilder {
         'empty_cta_label' => $copy['empty_cta_label'],
         'empty_cta_url' => $this->href($copy['empty_cta_url'], $cacheability),
         'item_count' => $this->itemCount($order),
+        'compact' => $compact,
       ],
       '#slots' => [],
     ];

@@ -10,8 +10,10 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\neo_commerce\Cart\CartModal;
 use Drupal\neo_commerce\Cart\CartPageBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Serves /cart and /cart/{order}.
@@ -29,10 +31,13 @@ class CartPageController implements ContainerInjectionInterface {
    *   The cart page builder.
    * @param \Drupal\commerce_cart\CartProviderInterface $cartProvider
    *   The cart provider.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   *   The request stack.
    */
   public function __construct(
     protected CartPageBuilder $builder,
     protected CartProviderInterface $cartProvider,
+    protected RequestStack $requestStack,
   ) {}
 
   /**
@@ -42,6 +47,7 @@ class CartPageController implements ContainerInjectionInterface {
     return new static(
       $container->get('neo_commerce.cart_page_builder'),
       $container->get('commerce_cart.cart_provider'),
+      $container->get('request_stack'),
     );
   }
 
@@ -56,10 +62,11 @@ class CartPageController implements ContainerInjectionInterface {
    */
   public function page(): array {
     $carts = $this->builder->nonEmptyCarts();
+    $compact = $this->compact();
     if (count($carts) === 1) {
-      return $this->builder->cart(reset($carts));
+      return $this->builder->cart(reset($carts), $compact);
     }
-    return $this->builder->overview($carts);
+    return $this->builder->overview($carts, $compact);
   }
 
   /**
@@ -72,7 +79,14 @@ class CartPageController implements ContainerInjectionInterface {
    *   A render array.
    */
   public function order(OrderInterface $commerce_order): array {
-    return $this->builder->cart($commerce_order);
+    return $this->builder->cart($commerce_order, $this->compact());
+  }
+
+  /**
+   * Whether this request opens the cart in the modal.
+   */
+  protected function compact(): bool {
+    return CartModal::isCompactRequest($this->requestStack->getCurrentRequest());
   }
 
   /**

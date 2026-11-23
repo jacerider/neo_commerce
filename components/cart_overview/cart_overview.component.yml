@@ -85,6 +85,11 @@ props:
             continue_url: '/'
             view_label: 'View cart'
             view_url: '/cart/1'
+    compact:
+      type: boolean
+      title: Compact
+      description: 'The cart is open in the cart modal: no page head and no explainer, one column. Set automatically for dialog requests and kept across the cart''s own ajax updates.'
+      examples: [false]
     empty:
       type: boolean
       title: Empty

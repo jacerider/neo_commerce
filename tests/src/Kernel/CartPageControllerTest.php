@@ -231,6 +231,7 @@ class CartPageControllerTest extends CartKernelTestBase {
     return new class(
       $this->container->get('neo_commerce.cart_page_builder'),
       $this->container->get('commerce_cart.cart_provider'),
+      $this->container->get('request_stack'),
     ) extends CartPageController {
 
       /**

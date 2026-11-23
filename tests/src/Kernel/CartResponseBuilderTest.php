@@ -241,6 +241,24 @@ class CartResponseBuilderTest extends CartKernelTestBase {
   }
 
   /**
+   * The modal opens the cart the item went into.
+   *
+   * With more than one cart, /cart is the overview; the shopper should see
+   * the cart they just added to.
+   */
+  public function testModalOpensTheCartAddedTo(): void {
+    $form = $this->addToCartForm();
+    $formState = $this->passedValidation();
+    $formState->set('cart_id', 7);
+
+    $commands = $this->respondToAddToCart($form, $formState)->getCommands();
+    $redirect = end($commands);
+
+    $this->assertSame('ajaxRedirect', $redirect['command']);
+    $this->assertSame('/cart/7', $redirect['data']['url']);
+  }
+
+  /**
    * The redirect setting sends the shopper to the cart page instead.
    */
   public function testRedirectsInsteadOfModal(): void {

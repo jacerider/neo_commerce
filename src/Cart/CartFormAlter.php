@@ -7,7 +7,6 @@ namespace Drupal\neo_commerce\Cart;
 use Drupal\Component\Utility\Html;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -164,12 +163,23 @@ class CartFormAlter {
     // flag Views reads after the form is built to drop them.
     $form['show_view_elements']['#value'] = FALSE;
 
+    $compact = CartModal::isCompactRequest(
+      $this->requestStack->getCurrentRequest()
+    );
+    if ($compact) {
+      $form[CartModal::COMPACT_PARAMETER] = [
+        '#type' => 'hidden',
+        '#value' => '1',
+      ];
+    }
+
     $weight = $form['output']['#weight'] ?? 50;
     $form['output'] = $this->pageBuilder->build(
       $order,
       $view,
       $placeholders,
-      $actions
+      $actions,
+      $compact
     );
     $form['output']['#weight'] = $weight;
   }
@@ -208,18 +218,7 @@ class CartFormAlter {
    *   The form.
    */
   protected function addDialogMessages(array &$form): void {
-    $request = $this->requestStack->getCurrentRequest();
-    if (!$request) {
-      return;
-    }
-    $key = MainContentViewSubscriber::WRAPPER_FORMAT;
-    $format = (string) $request->query->get(
-      $key,
-      (string) $request->request->get($key, '')
-    );
-    $dialog = $format === 'drupal_modal'
-      || str_starts_with($format, 'drupal_dialog');
-    if (!$dialog) {
+    if (!CartModal::isDialogRequest($this->requestStack->getCurrentRequest())) {
       return;
     }
     $form['messages']['#type'] ??= 'container';

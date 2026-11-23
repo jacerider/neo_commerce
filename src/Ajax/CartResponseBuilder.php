@@ -132,7 +132,7 @@ class CartResponseBuilder {
         $response->addCommand($command);
       }
       $this->addSuccessMessages($response, $settings);
-      $this->addSuccessCommand($response, $settings);
+      $this->addSuccessCommand($response, $settings, $formState);
     }
 
     $event = new AddToCartResponseEvent($response, $form, $formState, $hasErrors);
@@ -334,13 +334,21 @@ class CartResponseBuilder {
    *   The response.
    * @param \Drupal\neo_settings\Plugin\SettingsInterface $settings
    *   The active settings.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The add to cart form state, carrying Commerce's `cart_id`.
    */
-  protected function addSuccessCommand(AjaxResponse $response, $settings): void {
+  protected function addSuccessCommand(AjaxResponse $response, $settings, FormStateInterface $formState): void {
     $url = Url::fromRoute('commerce_cart.page');
 
     switch ($settings->getValue('add_to_cart_success')) {
       case 'modal':
-        $redirect = new AjaxRedirectCommand($url);
+        // The cart the item went into, rather than /cart: with more than one
+        // cart /cart is the overview, and the shopper wants to see the add.
+        // That cart's page links on to the overview when there are others.
+        $cartId = $formState->get('cart_id');
+        $redirect = new AjaxRedirectCommand($cartId
+          ? Url::fromRoute('neo_commerce.cart_order', ['commerce_order' => $cartId])
+          : $url);
         // `neo` is the only key neo_modal_ajax_render_alter() reads. The
         // module this replaces sent `exoModal`, named after a framework that
         // is no longer installed, so every option was discarded and the cart
@@ -382,6 +390,12 @@ class CartResponseBuilder {
       : $this->entityTypeManager->getStorage('commerce_order')->load($orderId);
 
     if (!$order || !$order->hasItems()) {
+      $compact = CartModal::isCompactRequest(
+        $this->requestStack->getCurrentRequest()
+      );
+      $empty = $order
+        ? $this->pageBuilder->buildEmpty($order, $compact)
+        : ['#theme' => 'commerce_cart_empty_page'];
       // Removing the last line empties the cart, and an empty cart form is a
       // header row with nothing under it. The wrapper and its live region are
       // rebuilt by hand here because there is no form left to build them.
@@ -398,9 +412,7 @@ class CartResponseBuilder {
             'aria-atomic' => 'true',
           ],
         ],
-        'empty' => $order
-          ? $this->pageBuilder->buildEmpty($order)
-          : ['#theme' => 'commerce_cart_empty_page'],
+        'empty' => $empty,
       ];
     }
 

@@ -12,7 +12,7 @@
   from there. Run `drush cr` after editing.
 #}
 {% set tag = title_tag ?: 'h1' %}
-<div{{ attributes.addClass(['cart-overview']) }}>
+<div{{ attributes.addClass(['cart-overview', compact ? 'cart-overview--compact']) }}>
   {% if empty %}
     <div class="cart-overview__empty py-14 text-center">
       {% if empty_title %}
@@ -26,7 +26,7 @@
       {% endif %}
     </div>
   {% else %}
-    {% if kicker or title or intro %}
+    {% if not compact and (kicker or title or intro) %}
       <header class="cart-overview__head mb-8 text-center">
         {% if kicker %}
           <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-accent">{{ kicker }}</p>
@@ -90,7 +90,7 @@
       {% endfor %}
     </div>
 
-    {% if explainer %}
+    {% if explainer and not compact %}
       <div class="cart-overview__explainer mx-auto mt-10 max-w-xl text-center opacity-80">{{ explainer }}</div>
     {% endif %}
   {% endif %}

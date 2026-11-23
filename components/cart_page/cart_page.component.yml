@@ -84,6 +84,11 @@ props:
       title: 'Back link URL'
       description: 'The cart overview. Empty when the shopper has one cart.'
       examples: ['/cart']
+    compact:
+      type: boolean
+      title: Compact
+      description: 'The cart is open in the cart modal: no page head and no explainer, one column. Set automatically for dialog requests and kept across the cart''s own ajax updates.'
+      examples: [false]
     item_count:
       type: integer
       title: 'Item count'

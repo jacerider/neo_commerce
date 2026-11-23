@@ -403,6 +403,34 @@ class CartFormAlterTest extends CartKernelTestBase {
   }
 
   /**
+   * The modal gets the compact cart, and keeps it across its own updates.
+   *
+   * The cart opens in the modal through a dialog request; every update after
+   * that is a plain ajax post, which the hidden value marks as compact.
+   */
+  public function testCompactInDialogAndItsUpdates(): void {
+    $order = $this->createCart([1]);
+    $request = $this->container->get('request_stack')->getCurrentRequest();
+
+    [$form, $formState, $view] = $this->buildCartForm($order);
+    $this->applyAlter($form, $formState, $view);
+    $this->assertFalse($form['output']['#props']['compact']);
+    $this->assertArrayNotHasKey('neo_cart_compact', $form);
+
+    $request->query->set('_wrapper_format', 'drupal_modal');
+    [$form, $formState, $view] = $this->buildCartForm($order);
+    $this->applyAlter($form, $formState, $view);
+    $this->assertTrue($form['output']['#props']['compact']);
+    $this->assertSame('1', $form['neo_cart_compact']['#value']);
+
+    $request->query->remove('_wrapper_format');
+    $request->request->set('neo_cart_compact', '1');
+    [$form, $formState, $view] = $this->buildCartForm($order);
+    $this->applyAlter($form, $formState, $view);
+    $this->assertTrue($form['output']['#props']['compact']);
+  }
+
+  /**
    * The order type's checkout label wins over the cart form's.
    */
   public function testCheckoutLabelFromOrderTypeCopy(): void {

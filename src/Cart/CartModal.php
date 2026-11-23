@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Drupal\neo_commerce\Cart;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
 use Drupal\neo_settings\Plugin\SettingsInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Builds the cart modal's options and its trigger attributes.
@@ -16,6 +18,54 @@ use Drupal\neo_settings\Plugin\SettingsInterface;
  * than by two lists staying in step.
  */
 final class CartModal {
+
+  /**
+   * The form value that keeps a cart compact across its own ajax updates.
+   *
+   * The cart opens in the modal through a dialog request, but every update
+   * after that is a plain ajax post. The compact cart form carries this
+   * hidden value so the update rebuilds it compact too.
+   */
+  public const COMPACT_PARAMETER = 'neo_cart_compact';
+
+  /**
+   * Whether a request renders into a dialog.
+   *
+   * A dialog renders the main content alone: no page messages region, and no
+   * room for a page layout.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request|null $request
+   *   The request.
+   *
+   * @return bool
+   *   TRUE for a modal or dialog request.
+   */
+  public static function isDialogRequest(?Request $request): bool {
+    if (!$request) {
+      return FALSE;
+    }
+    $key = MainContentViewSubscriber::WRAPPER_FORMAT;
+    $format = (string) $request->query->get(
+      $key,
+      (string) $request->request->get($key, '')
+    );
+    return $format === 'drupal_modal'
+      || str_starts_with($format, 'drupal_dialog');
+  }
+
+  /**
+   * Whether a request renders the compact cart.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request|null $request
+   *   The request.
+   *
+   * @return bool
+   *   TRUE in a dialog, or for an update posted from a compact cart.
+   */
+  public static function isCompactRequest(?Request $request): bool {
+    return static::isDialogRequest($request)
+      || (bool) $request?->request->get(static::COMPACT_PARAMETER);
+  }
 
   /**
    * Builds the neo modal options for the cart.
