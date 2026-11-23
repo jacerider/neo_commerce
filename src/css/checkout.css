@@ -11,6 +11,11 @@
   display: none !important;
 }
 
+[data-neo-checkout-login-toggle][hidden],
+[data-neo-checkout-login][hidden] {
+  display: none !important;
+}
+
 /* Folded on phones once the script has run. */
 @media (max-width: 1023.98px) {
   [data-neo-checkout-summary][data-collapsed] {

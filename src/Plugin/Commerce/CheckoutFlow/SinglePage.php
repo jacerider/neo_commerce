@@ -116,7 +116,8 @@ class SinglePage extends CheckoutFlowWithPanesBase {
     $configuration = parent::defaultConfiguration();
     $configuration['display_checkout_progress'] = FALSE;
     $configuration['panes'] = [
-      'contact_information' => ['step' => self::STEP, 'weight' => 0],
+      'neo_contact' => ['step' => self::STEP, 'weight' => 0],
+      'contact_information' => ['step' => '_disabled'],
       'shipping_information' => ['step' => self::STEP, 'weight' => 5],
       'payment_information' => ['step' => self::STEP, 'weight' => 10],
       'stripe_review' => ['step' => self::STEP, 'weight' => 15],
@@ -222,6 +223,10 @@ class SinglePage extends CheckoutFlowWithPanesBase {
       '#name' => self::SAVE_BUTTON,
       '#weight' => 100,
       '#submit' => ['::saveStep'],
+      // Commerce's inline forms (address book profiles) submit themselves
+      // only for a primary or secondary button. The save stores the page as
+      // Place order would, so it needs them to.
+      '#button_type' => 'secondary',
       '#ajax' => [
         'callback' => '::ajaxSave',
         'progress' => ['type' => 'none'],

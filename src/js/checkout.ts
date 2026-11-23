@@ -159,8 +159,74 @@ const save = (form: HTMLFormElement): Promise<SaveResult> => {
     target?.focus();
   };
 
+  /**
+   * The inline log in: a toggle that opens the password box.
+   *
+   * Without script the box is simply open and the toggle hidden.
+   */
+  const attachLoginToggle = (toggle: HTMLButtonElement): void => {
+    const box = document.getElementById(
+      toggle.getAttribute('aria-controls') || '',
+    );
+    if (!box) {
+      return;
+    }
+    const set = (open: boolean): void => {
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      box.hidden = !open;
+    };
+    toggle.hidden = false;
+    // A failed log in comes back with the box holding an error: keep it open.
+    set(!!box.querySelector('[aria-invalid="true"], .form-item--error-message'));
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      set(open);
+      if (open) {
+        box.querySelector<HTMLInputElement>('input[type="password"]')?.focus();
+      }
+    });
+  };
+
+  /**
+   * Enter in a field presses that section's own button, or nothing.
+   *
+   * A browser's implicit submit presses the first submit button in the form.
+   * On one page that is whatever button comes first (Log in, for a guest),
+   * so Enter in an address field would try to log in. Enter applies the
+   * section it is in (a coupon, a password), and otherwise waits for Place
+   * order to be pressed.
+   */
+  const onKeydown = (event: KeyboardEvent): void => {
+    const field = event.target as HTMLElement | null;
+    if (
+      event.key !== 'Enter' ||
+      !(field instanceof HTMLInputElement) ||
+      !field.closest('form[data-neo-checkout]')
+    ) {
+      return;
+    }
+    event.preventDefault();
+    const section = field.closest('[data-neo-checkout-login], .checkout-pane');
+    const button = section?.querySelector<HTMLElement>(
+      'input[type="submit"]:not([data-neo-checkout-save]), button[type="submit"]:not([data-neo-checkout-save])',
+    );
+    if (!button || button.matches('[data-neo-checkout-place]')) {
+      return;
+    }
+    // Ajax buttons listen for mousedown; plain ones post on a click.
+    if (ajaxFor(button)) {
+      button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    }
+    else {
+      button.click();
+    }
+  };
+  document.addEventListener('keydown', onKeydown);
+
   Drupal.behaviors.neoCommerceCheckout = {
     attach: (context: HTMLElement) => {
+      once('neo-checkout-login', '[data-neo-checkout-login-toggle]', context)
+        .forEach((toggle) => attachLoginToggle(toggle as HTMLButtonElement));
       if (context !== document as unknown as HTMLElement) {
         restoreFocus(context);
       }

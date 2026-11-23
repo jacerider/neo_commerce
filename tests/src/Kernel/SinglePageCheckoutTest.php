@@ -11,6 +11,8 @@ use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_product\Entity\ProductVariationType;
 use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\Flood\MemoryBackend;
 use Drupal\Core\Form\FormAjaxResponseBuilderInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormState;
@@ -21,6 +23,7 @@ use Drupal\neo_commerce\Checkout\CheckoutPage;
 use Drupal\neo_commerce\Plugin\Commerce\CheckoutFlow\SinglePage;
 use Drupal\Tests\commerce_cart\Kernel\CartKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -66,12 +69,25 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
   /**
    * {@inheritdoc}
    */
+  public function register(ContainerBuilder $container): void {
+    parent::register($container);
+    // The database flood backend needs a table this test never installs.
+    $container->register('flood', MemoryBackend::class)
+      ->addArgument(new Reference('request_stack'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('commerce_payment');
     $this->installEntitySchema('commerce_payment_method');
     $this->installConfig(['commerce_checkout', 'commerce_payment']);
     $this->installConfig(['neo_commerce']);
+    // Flood limits for the inline log in. Without them every attempt is
+    // blocked.
+    $this->installConfig(['user']);
 
     PaymentGateway::create([
       'id' => 'manual',
@@ -130,14 +146,15 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
       array_keys($plugin->getSteps())
     );
     $this->assertSame(
-      ['contact_information', 'payment_information'],
+      ['neo_contact', 'payment_information'],
       array_keys($plugin->getVisiblePanes(SinglePage::STEP))
     );
     $this->assertSame(
       'payment',
       $plugin->getPane('payment_process')->getStepId()
     );
-    foreach (['review', 'login', 'billing_information'] as $paneId) {
+    $disabled = ['review', 'login', 'billing_information', 'contact_information'];
+    foreach ($disabled as $paneId) {
       $pane = $plugin->getPane($paneId);
       if ($pane) {
         $this->assertSame('_disabled', $pane->getStepId(), $paneId);
@@ -177,7 +194,7 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
    */
   public function testSaveStaysOnThePage(): void {
     $formState = $this->submit([
-      'contact_information' => ['email' => 'shopper@example.com'],
+      'neo_contact' => ['email' => 'shopper@example.com'],
       SinglePage::SAVE_BUTTON => 'Save',
     ]);
 
@@ -193,7 +210,7 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
    */
   public function testSaveReportsErrors(): void {
     $formState = $this->submit([
-      'contact_information' => ['email' => 'not an email'],
+      'neo_contact' => ['email' => 'not an email'],
       SinglePage::SAVE_BUTTON => 'Save',
     ]);
 
@@ -206,7 +223,7 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
    */
   public function testPlaceOrderGoesToPayment(): void {
     $formState = $this->submit([
-      'contact_information' => ['email' => 'shopper@example.com'],
+      'neo_contact' => ['email' => 'shopper@example.com'],
       'op' => 'Place order',
     ]);
 
@@ -485,6 +502,42 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
       '#edit-contact-information',
       array_column($response->getCommands(), 'selector')
     );
+  }
+
+  /**
+   * A returning customer logs in from the page and keeps the order.
+   */
+  public function testInlineLogin(): void {
+    $account = $this->createUser([], 'returning');
+    $account->setEmail('returning@example.com');
+    $account->setPassword('secret');
+    $account->save();
+    // Built before user.flood was installed, it read empty limits.
+    $this->container->set('commerce.credentials_check_flood', NULL);
+
+    $formState = $this->submit([
+      'neo_contact' => [
+        'email' => 'returning@example.com',
+        'login' => ['password' => 'wrong'],
+      ],
+      'neo_contact_login' => 'Log in',
+    ]);
+    $this->assertTrue($formState->hasAnyErrors());
+    $this->assertSame(0, (int) $this->reload()->getCustomerId());
+
+    $formState = $this->submit([
+      'neo_contact' => [
+        'email' => 'returning@example.com',
+        'login' => ['password' => 'secret'],
+      ],
+      'neo_contact_login' => 'Log in',
+    ]);
+    $this->assertFalse($formState->hasAnyErrors());
+    $cart = $this->reload();
+    $this->assertSame((int) $account->id(), (int) $cart->getCustomerId());
+    $this->assertSame('returning@example.com', $cart->getEmail());
+    // Still on the page, not moved on to payment.
+    $this->assertNotSame('payment', $cart->get('checkout_step')->value);
   }
 
   /**
