@@ -258,6 +258,65 @@ class CartResponseBuilderTest extends CartKernelTestBase {
   }
 
   /**
+   * Staying on the page shows the queued add message there, once.
+   *
+   * Commerce queues "added to your cart" on the messenger. Left there, the
+   * ajax response never shows it and the next page load does, long after
+   * the add it describes.
+   */
+  public function testRefreshSendsQueuedMessagesToThePage(): void {
+    $this->setSettings(['add_to_cart_success' => 'refresh']);
+    $form = $this->addToCartForm();
+    $messenger = $this->container->get('messenger');
+    $messenger->deleteAll();
+    $messenger->addStatus('A thing added to your cart.');
+
+    $response = $this->respondToAddToCart($form, $this->passedValidation());
+    $messages = array_values(array_filter(
+      $response->getCommands(),
+      static fn (array $command): bool => $command['command'] === 'message'
+    ));
+
+    $this->assertCount(1, $messages);
+    $this->assertSame('A thing added to your cart.', $messages[0]['message']);
+    // No selector: the page's own messages area, not the form.
+    $this->assertNull($messages[0]['messageWrapperQuerySelector']);
+    $this->assertSame('status', $messages[0]['messageOptions']['type']);
+    $this->assertSame([], $messenger->all());
+  }
+
+  /**
+   * The modal and redirect leave the queued message for the next request.
+   *
+   * Both are followed by a request that renders the messenger -- the cart
+   * form in the dialog, or the cart page -- so taking the message here would
+   * show it nowhere.
+   */
+  public function testModalAndRedirectLeaveQueuedMessages(): void {
+    $form = $this->addToCartForm();
+    $messenger = $this->container->get('messenger');
+    foreach (['modal', 'redirect'] as $success) {
+      $this->setSettings(['add_to_cart_success' => $success]);
+      $messenger->deleteAll();
+      $messenger->addStatus('A thing added to your cart.');
+
+      $response = $this->respondToAddToCart(
+        $form,
+        $this->passedValidation()
+      );
+
+      $this->assertNotContains(
+        'message',
+        array_column($response->getCommands(), 'command')
+      );
+      $this->assertCount(
+        1,
+        $messenger->messagesByType(MessengerInterface::TYPE_STATUS)
+      );
+    }
+  }
+
+  /**
    * Both paths dispatch the event, saying which one ran.
    *
    * A subscriber appending to the response is the documented extension

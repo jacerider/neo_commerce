@@ -35,6 +35,7 @@ services:
       - '@neo_commerce.settings'
       - '@event_dispatcher'
       - '@string_translation'
+      - '@request_stack'
 
   neo_commerce.selected_variation:
     class: Drupal\neo_commerce\Product\SelectedVariation

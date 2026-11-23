@@ -275,6 +275,42 @@ class CartFormAlterTest extends CartKernelTestBase {
   }
 
   /**
+   * A cart opened in a dialog renders the queued messages itself.
+   *
+   * A dialog renders the main content alone, so a message queued by an ajax
+   * add to cart that opens this cart in a modal would otherwise wait in the
+   * session for the next full page load. A full page renders its own
+   * messages region, so the form leaves them alone there.
+   */
+  public function testRendersMessagesInDialogOnly(): void {
+    $order = $this->createCart([1]);
+    $request = $this->container->get('request_stack')->getCurrentRequest();
+
+    [$form, $formState, $view] = $this->buildCartForm($order);
+    $this->applyAlter($form, $formState, $view);
+    $this->assertArrayNotHasKey('status', $form['messages']);
+
+    $request->query->set('_wrapper_format', 'drupal_modal');
+    [$form, $formState, $view] = $this->buildCartForm($order);
+    $this->applyAlter($form, $formState, $view);
+    $this->assertSame(
+      'status_messages',
+      $form['messages']['status']['#type']
+    );
+
+    // Without the ajax cart form there is no live region to borrow, so the
+    // dialog still gets somewhere to put them.
+    $this->setSettings(['cart_form_ajax' => FALSE]);
+    [$form, $formState, $view] = $this->buildCartForm($order);
+    $this->applyAlter($form, $formState, $view);
+    $this->assertSame('container', $form['messages']['#type']);
+    $this->assertSame(
+      'status_messages',
+      $form['messages']['status']['#type']
+    );
+  }
+
+  /**
    * Each cart gets its own wrapper id.
    *
    * /cart renders one form per cart when a shopper has carts in more than

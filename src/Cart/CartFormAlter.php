@@ -6,6 +6,7 @@ namespace Drupal\neo_commerce\Cart;
 
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
 use Drupal\Core\Render\Element;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
@@ -13,6 +14,7 @@ use Drupal\neo_commerce\Event\CartFormAlterEvent;
 use Drupal\neo_icon\IconTrait;
 use Drupal\neo_settings\SettingsRepositoryInterface;
 use Drupal\views\ViewExecutable;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -32,11 +34,14 @@ class CartFormAlter {
    *   The event dispatcher.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $stringTranslation
    *   The string translation service.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   *   The request stack.
    */
   public function __construct(
     protected SettingsRepositoryInterface $settings,
     protected EventDispatcherInterface $eventDispatcher,
     TranslationInterface $stringTranslation,
+    protected RequestStack $requestStack,
   ) {
     $this->stringTranslation = $stringTranslation;
   }
@@ -83,6 +88,7 @@ class CartFormAlter {
       ];
     }
 
+    $this->addDialogMessages($form);
     $this->alterQuantities($form, $settings);
     $this->alterRemoveButtons($form, $formState, $settings, $wrapperId, $ajax);
     $this->alterActions($form, $settings, $wrapperId, $ajax);
@@ -111,6 +117,42 @@ class CartFormAlter {
    */
   public static function wrapperId(string $orderId): string {
     return Html::getId('neo-commerce-cart-' . $orderId);
+  }
+
+  /**
+   * Renders queued messages into the cart when it opens in a dialog.
+   *
+   * A dialog renders the main content alone, never the page's messages
+   * region, so whatever the messenger holds would otherwise sit in the
+   * session until the next full page load. That is exactly what happens
+   * after an ajax add to cart that opens the cart in a modal: the "added to
+   * your cart" message Commerce queued has nowhere to go, and turns up on
+   * the next page the shopper visits instead.
+   *
+   * Only a dialog request does this. A full /cart page renders the messages
+   * region itself, and the ajax cart update sends its messages as commands.
+   *
+   * @param array $form
+   *   The form.
+   */
+  protected function addDialogMessages(array &$form): void {
+    $request = $this->requestStack->getCurrentRequest();
+    if (!$request) {
+      return;
+    }
+    $key = MainContentViewSubscriber::WRAPPER_FORMAT;
+    $format = (string) $request->query->get(
+      $key,
+      (string) $request->request->get($key, '')
+    );
+    $dialog = $format === 'drupal_modal'
+      || str_starts_with($format, 'drupal_dialog');
+    if (!$dialog) {
+      return;
+    }
+    $form['messages']['#type'] ??= 'container';
+    $form['messages']['#weight'] ??= -1000;
+    $form['messages']['status'] = ['#type' => 'status_messages'];
   }
 
   /**

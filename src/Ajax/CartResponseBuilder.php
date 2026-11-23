@@ -127,6 +127,7 @@ class CartResponseBuilder {
       foreach ($this->cartRefreshCommands() as $command) {
         $response->addCommand($command);
       }
+      $this->addSuccessMessages($response, $settings);
       $this->addSuccessCommand($response, $settings);
     }
 
@@ -285,6 +286,41 @@ class CartResponseBuilder {
       return NULL;
     }
     return $reported;
+  }
+
+  /**
+   * Shows the messages a successful add queued, where the shopper is looking.
+   *
+   * Commerce queues "<item> added to your cart." on the messenger. Nothing in
+   * an ajax response renders the messenger, so left alone the message waits
+   * in the session and greets the shopper on their next page load, long after
+   * the add it describes.
+   *
+   * Where it belongs depends on what happens next. The modal is opened by a
+   * second request this response cannot reach into, so the messages are left
+   * queued for it: the cart form renders them at the top of the dialog (see
+   * CartFormAlter::addDialogMessages()). A redirect lands on a full page that
+   * renders them as usual. Only when the shopper stays put are they sent
+   * here, into the page's own messages area.
+   *
+   * @param \Drupal\Core\Ajax\AjaxResponse $response
+   *   The response.
+   * @param \Drupal\neo_settings\Plugin\SettingsInterface $settings
+   *   The active settings.
+   */
+  protected function addSuccessMessages(AjaxResponse $response, $settings): void {
+    $success = $settings->getValue('add_to_cart_success');
+    if (in_array($success, ['modal', 'redirect'], TRUE)) {
+      return;
+    }
+    foreach ($this->messenger->all() as $type => $messages) {
+      foreach ($messages as $message) {
+        $response->addCommand(
+          new MessageCommand((string) $message, NULL, ['type' => $type], FALSE)
+        );
+      }
+    }
+    $this->messenger->deleteAll();
   }
 
   /**
