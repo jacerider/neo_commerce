@@ -1,0 +1,97 @@
+$schema: 'https://git.drupalcode.org/project/drupal/-/raw/10.1.x/core/modules/sdc/src/metadata.schema.json'
+name: 'Cart | Page'
+status: stable
+description: 'One cart: a page head, the lines with their quantity and remove controls, and an order summary with the checkout button. Rendered by neo_commerce around Commerce''s cart form, at /cart and /cart/{order}.'
+# Source template. `neo: false` keeps this module copy out of the component
+# picker; `neo_install: true` has neo_alchemist copy it into the front theme on
+# install, flipping the copy to `neo: true`. The theme copy is the one you
+# restyle. Strip `neo_install` from that copy -- the installer flips `neo` but
+# leaves the key behind, and a stale one trips drush neo:alchemist:validate.
+#
+# This copy stays renderable so a site whose theme copy was deleted still has a
+# working cart.
+neo: false
+neo_install: true
+props:
+  type: object
+  properties:
+    kicker:
+      type: string
+      title: Kicker
+      description: 'The small line above the title.'
+      examples: ['Your Basket']
+    title:
+      type: string
+      title: Title
+      description: 'The page heading, printed with title_tag. As the page''s H1, hide the theme''s page title block on cart pages.'
+      examples: ['Your cart']
+    title_tag:
+      type: string
+      title: 'Title tag'
+      description: 'The heading tag for the title. h1 by default, because the cart page has no other; a site that keeps its page title block on cart pages sets h2.'
+      enum: [h1, h2]
+      examples: [h1]
+    intro:
+      type: string
+      title: Intro
+      examples: ['Pantry, bakery & cellar, ready when you are.']
+    notice_icon:
+      type: string
+      title: 'Notice icon'
+      description: 'A neo_icon name for the notice box.'
+      examples: ['check']
+    footnote:
+      type: string
+      title: Footnote
+      description: 'Under the order summary.'
+      examples: ['Taxes and delivery are calculated at checkout.']
+    continue_label:
+      type: string
+      title: 'Continue shopping label'
+      examples: ['Continue shopping']
+    continue_url:
+      type: string
+      title: 'Continue shopping URL'
+      examples: ['/']
+    empty:
+      type: boolean
+      title: Empty
+      description: 'The cart has no lines: show the empty state and no summary.'
+      examples: [false]
+    empty_title:
+      type: string
+      title: 'Empty title'
+      examples: ['Your cart is empty']
+    empty_text:
+      type: string
+      title: 'Empty text'
+      examples: ['Olive oil, fresh bread, a bottle of wine…']
+    empty_cta_label:
+      type: string
+      title: 'Empty button label'
+      examples: ['Continue shopping']
+    empty_cta_url:
+      type: string
+      title: 'Empty button URL'
+      examples: ['/']
+    item_count:
+      type: integer
+      title: 'Item count'
+      description: 'Total quantity across the lines.'
+      examples: [3]
+slots:
+  notice:
+    title: Notice
+    description: 'A boxed note above the lines, such as delivery terms. Already filtered; may hold strong, em and links.'
+  lines:
+    title: Lines
+    description: 'One cart_line component per order item.'
+  summary:
+    title: Summary
+    description: 'Commerce''s order totals summary: subtotal, adjustments, total.'
+  checkout:
+    title: 'Checkout button'
+    description: 'The cart form''s checkout button. MUST be printed, inside the form markup this component sits in, or the cart cannot check out.'
+  update:
+    title: 'Update button'
+    description: 'The cart form''s update button. MUST be printed: it is the submit the quantity controls use. Hide it visually when quantities apply immediately; never remove it.'

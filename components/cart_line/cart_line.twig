@@ -1,0 +1,36 @@
+{#
+  Cart | Line — one line of a cart.
+
+  `quantity` and `remove` are the cart form's own elements (placeholders that
+  Views swaps for them as the form renders). Print each once.
+
+  The image arrives as data and is cropped here with neo_image, so the crop
+  always matches the box. Change both together.
+
+  Own this file: it is copied into your theme on install and yours to restyle
+  from there. Run `drush cr` after editing.
+#}
+<div{{ attributes.addClass(['cart-line', 'flex', 'gap-4', 'py-5']) }}>
+  <div class="cart-line__image size-18 shrink-0 overflow-hidden border">
+    {% if image.src %}
+      {{ neo_image_style(image.src, {focal: {width: 144, height: 144}}, image.alt, '', {class: ['size-full', 'object-cover']}) }}
+    {% endif %}
+  </div>
+  <div class="cart-line__main min-w-0 flex-1">
+    <div class="flex items-start justify-between gap-3">
+      {% if url %}
+        <a href="{{ url }}" class="cart-line__title font-semibold">{{ title }}</a>
+      {% else %}
+        <span class="cart-line__title font-semibold">{{ title }}</span>
+      {% endif %}
+      <span class="cart-line__total whitespace-nowrap font-semibold">{{ total }}</span>
+    </div>
+    {% if meta %}
+      <p class="cart-line__meta mt-1 italic opacity-70">{{ meta }}</p>
+    {% endif %}
+    <div class="cart-line__controls mt-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="cart-line__quantity shrink-0">{{ quantity }}</div>
+      <div class="cart-line__remove">{{ remove }}</div>
+    </div>
+  </div>
+</div>

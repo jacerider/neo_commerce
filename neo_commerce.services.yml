@@ -20,6 +20,7 @@ services:
       - '@request_stack'
       - '@entity_type.manager'
       - '@string_translation'
+      - '@neo_commerce.cart_page_builder'
 
   neo_commerce.add_to_cart:
     class: Drupal\neo_commerce\Cart\AddToCartFormAlter
@@ -36,6 +37,17 @@ services:
       - '@event_dispatcher'
       - '@string_translation'
       - '@request_stack'
+      - '@neo_commerce.cart_page_builder'
+      - '@neo_commerce.cart_copy'
+      - '@entity_type.manager'
+
+  neo_commerce.cart_page_builder:
+    class: Drupal\neo_commerce\Cart\CartPageBuilder
+    arguments:
+      - '@neo_commerce.settings'
+      - '@neo_commerce.cart_copy'
+      - '@commerce_price.currency_formatter'
+      - '@file_url_generator'
 
   neo_commerce.cart_copy:
     class: Drupal\neo_commerce\Cart\CartCopy

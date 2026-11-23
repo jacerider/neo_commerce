@@ -45,6 +45,9 @@ class CartFormAlterTest extends CartKernelTestBase {
     'neo_modal',
     'neo_tooltip',
     'neo_alchemist',
+    'file',
+    'image',
+    'neo_image',
     'neo_commerce',
     // Installed so the Checkout button under test is the real one Commerce
     // adds, rather than a hand-written stand-in for it.
@@ -345,6 +348,78 @@ class CartFormAlterTest extends CartKernelTestBase {
       $formA['messages']['#attributes']['id']
     );
     $this->assertSame((string) $first->id(), $formA['#order_id']);
+  }
+
+  /**
+   * The view's output becomes the cart page, with the form's own elements.
+   *
+   * The quantity and remove elements stay in the form array; each line gets
+   * the placeholder Views swaps for them, and the action buttons are added
+   * to that same list so they print inside the summary.
+   */
+  public function testRendersThroughCartPage(): void {
+    $order = $this->createCart([1, 3]);
+    [$form, $formState, $view] = $this->buildCartForm($order);
+    $this->addCheckoutButton($form, $formState);
+
+    $this->applyAlter($form, $formState, $view);
+
+    $page = $form['output'];
+    $this->assertSame('component', $page['#type']);
+    $this->assertSame('neo_commerce:cart_page', $page['#component']);
+    $this->assertFalse($page['#props']['empty']);
+    $this->assertSame(4, $page['#props']['item_count']);
+    $this->assertSame('Your cart', $page['#props']['title']);
+    $this->assertFalse($form['show_view_elements']['#value']);
+
+    $lines = $page['#slots']['lines'];
+    $this->assertCount(2, $lines);
+    $this->assertSame('neo_commerce:cart_line', $lines[0]['#component']);
+    $this->assertSame('A thing', $lines[1]['#props']['title']);
+    $this->assertSame(3, $lines[1]['#props']['count']);
+    $this->assertSame('$29.97', $lines[1]['#props']['total']);
+    $this->assertSame(
+      '<!--form-item-edit_quantity--1-->',
+      (string) $lines[1]['#slots']['quantity']['#markup']
+    );
+    $this->assertSame(
+      '<!--form-item-remove_button--1-->',
+      (string) $lines[1]['#slots']['remove']['#markup']
+    );
+    // The elements those placeholders stand for are still form children.
+    $this->assertArrayHasKey(1, $form['edit_quantity']);
+    $this->assertArrayHasKey(1, $form['remove_button']);
+
+    $this->assertArrayHasKey('summary', $page['#slots']);
+    $substitutions = array_column(
+      $form['#substitutions']['#value'],
+      'row_id',
+      'placeholder'
+    );
+    foreach (['checkout' => 'checkout', 'update' => 'submit'] as $slot => $key) {
+      $placeholder = (string) $page['#slots'][$slot]['#markup'];
+      $this->assertSame($key, $substitutions[$placeholder]);
+    }
+  }
+
+  /**
+   * The order type's checkout label wins over the cart form's.
+   */
+  public function testCheckoutLabelFromOrderTypeCopy(): void {
+    $this->setSettings([
+      'cart_checkout_label' => 'Checkout',
+      'cart_copy_types' => ['default' => ['checkout_label' => 'Continue To Checkout']],
+    ]);
+    $order = $this->createCart([1]);
+    [$form, $formState, $view] = $this->buildCartForm($order);
+    $this->addCheckoutButton($form, $formState);
+
+    $this->applyAlter($form, $formState, $view);
+
+    $this->assertSame(
+      'Continue To Checkout',
+      (string) $form['actions']['checkout']['#value']
+    );
   }
 
   /**

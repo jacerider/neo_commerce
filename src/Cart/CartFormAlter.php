@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Drupal\neo_commerce\Cart;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Form\FormStateInterface;
+use Drupal\commerce_order\Entity\OrderInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
@@ -36,12 +38,21 @@ class CartFormAlter {
    *   The string translation service.
    * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
    *   The request stack.
+   * @param \Drupal\neo_commerce\Cart\CartPageBuilder $pageBuilder
+   *   The cart page builder.
+   * @param \Drupal\neo_commerce\Cart\CartCopy $copy
+   *   The cart copy resolver.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
    */
   public function __construct(
     protected SettingsRepositoryInterface $settings,
     protected EventDispatcherInterface $eventDispatcher,
     TranslationInterface $stringTranslation,
     protected RequestStack $requestStack,
+    protected CartPageBuilder $pageBuilder,
+    protected CartCopy $copy,
+    protected EntityTypeManagerInterface $entityTypeManager,
   ) {
     $this->stringTranslation = $stringTranslation;
   }
@@ -91,7 +102,14 @@ class CartFormAlter {
     $this->addDialogMessages($form);
     $this->alterQuantities($form, $settings);
     $this->alterRemoveButtons($form, $formState, $settings, $wrapperId, $ajax);
-    $this->alterActions($form, $settings, $wrapperId, $ajax);
+    /** @var \Drupal\commerce_order\Entity\OrderInterface|null $order */
+    $order = $orderId === ''
+      ? NULL
+      : $this->entityTypeManager->getStorage('commerce_order')->load($orderId);
+    $this->alterActions($form, $settings, $wrapperId, $ajax, $order);
+    if ($order) {
+      $this->renderAsPage($form, $view, $order);
+    }
 
     if ($ajax) {
       $form['#submit'][] = [static::class, 'submit'];
@@ -100,6 +118,59 @@ class CartFormAlter {
     $event = new CartFormAlterEvent($form, $formState, $wrapperId);
     $this->eventDispatcher->dispatch($event, CartFormAlterEvent::EVENT_NAME);
     $form = $event->form;
+  }
+
+  /**
+   * Renders the cart through the cart page component.
+   *
+   * Only the view's output is replaced. The quantity fields, remove buttons
+   * and action buttons stay in the form array, and the component gets the
+   * placeholders ViewsFormMainForm::preRenderViewsForm() swaps for them at
+   * render time. The action buttons are added to that same list, so they
+   * print inside the component (the checkout button in the summary) and are
+   * marked printed before the actions container renders.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\views\ViewExecutable $view
+   *   The cart form view.
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The cart.
+   */
+  protected function renderAsPage(array &$form, ViewExecutable $view, OrderInterface $order): void {
+    $placeholders = [];
+    foreach ($form['#substitutions']['#value'] ?? [] as $substitution) {
+      $placeholders[$substitution['field_name']][$substitution['row_id']] =
+        $substitution['placeholder'];
+    }
+
+    $actions = [];
+    foreach (['checkout' => 'checkout', 'update' => 'submit'] as $slot => $key) {
+      if (!isset($form['actions'][$key])) {
+        continue;
+      }
+      $placeholder = '<!--neo-commerce-cart-action--' . $key . '-->';
+      $form['#substitutions']['#value'][] = [
+        'placeholder' => $placeholder,
+        'field_name' => 'actions',
+        'row_id' => $key,
+      ];
+      $actions[$slot] = $placeholder;
+    }
+
+    // The component draws its own totals summary, so the view's header and
+    // footer (Commerce's order total area) would print it twice. This is the
+    // flag Views reads after the form is built to drop them.
+    $form['show_view_elements']['#value'] = FALSE;
+
+    $weight = $form['output']['#weight'] ?? 50;
+    $form['output'] = $this->pageBuilder->build(
+      $order,
+      $view,
+      $placeholders,
+      $actions
+    );
+    $form['output']['#weight'] = $weight;
   }
 
   /**
@@ -247,8 +318,10 @@ class CartFormAlter {
    *   The form wrapper id.
    * @param bool $ajax
    *   Whether ajax is enabled.
+   * @param \Drupal\commerce_order\Entity\OrderInterface|null $order
+   *   The cart, whose order type picks the checkout label.
    */
-  protected function alterActions(array &$form, $settings, string $wrapperId, bool $ajax): void {
+  protected function alterActions(array &$form, $settings, string $wrapperId, bool $ajax, ?OrderInterface $order): void {
     // Both of these are #type submit, whose label renders from #value. The
     // module this replaces set #title instead, so neither relabelling ever
     // reached the page and both buttons kept Commerce's wording.
@@ -271,7 +344,10 @@ class CartFormAlter {
     // items. We run after its form_alter, so it is safe to read here rather
     // than from a #pre_render as the old module had to.
     if (isset($form['actions']['checkout'])) {
-      $checkout = (string) $settings->getValue('cart_checkout_label');
+      // The order type's copy, which falls back to cart_checkout_label.
+      $checkout = $order
+        ? $this->copy->forOrderType($order->bundle())['checkout_label']
+        : (string) $settings->getValue('cart_checkout_label');
       if ($checkout !== '') {
         $form['actions']['checkout']['#value'] = $checkout;
       }

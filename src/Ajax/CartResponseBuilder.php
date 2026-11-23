@@ -18,6 +18,7 @@ use Drupal\Core\Url;
 use Drupal\neo\Ajax\AjaxRedirectCommand;
 use Drupal\neo_commerce\Cart\CartLazyBuilders;
 use Drupal\neo_commerce\Cart\CartModal;
+use Drupal\neo_commerce\Cart\CartPageBuilder;
 use Drupal\neo_commerce\Event\AddToCartResponseEvent;
 use Drupal\neo_commerce\Form\AjaxFormErrors;
 use Drupal\neo_settings\SettingsRepositoryInterface;
@@ -59,6 +60,8 @@ class CartResponseBuilder {
    *   The entity type manager.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $stringTranslation
    *   The string translation service.
+   * @param \Drupal\neo_commerce\Cart\CartPageBuilder $pageBuilder
+   *   The cart page builder.
    */
   public function __construct(
     protected SettingsRepositoryInterface $settings,
@@ -68,6 +71,7 @@ class CartResponseBuilder {
     protected RequestStack $requestStack,
     protected EntityTypeManagerInterface $entityTypeManager,
     TranslationInterface $stringTranslation,
+    protected CartPageBuilder $pageBuilder,
   ) {
     $this->stringTranslation = $stringTranslation;
   }
@@ -394,7 +398,9 @@ class CartResponseBuilder {
             'aria-atomic' => 'true',
           ],
         ],
-        'empty' => ['#theme' => 'commerce_cart_empty_page'],
+        'empty' => $order
+          ? $this->pageBuilder->buildEmpty($order)
+          : ['#theme' => 'commerce_cart_empty_page'],
       ];
     }
 

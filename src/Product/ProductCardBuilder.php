@@ -10,7 +10,6 @@ use Drupal\commerce_product\Entity\ProductVariationInterface;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
-use Drupal\media\MediaInterface;
 use Drupal\neo_settings\SettingsRepositoryInterface;
 
 /**
@@ -20,6 +19,8 @@ use Drupal\neo_settings\SettingsRepositoryInterface;
  * lists many products and the query argument belongs to the page's own.
  */
 class ProductCardBuilder {
+
+  use ImageDataTrait;
 
   /**
    * The product view mode a card replaces.
@@ -87,7 +88,7 @@ class ProductCardBuilder {
     ];
 
     if ($variation) {
-      $image = $this->image($variation, (string) $settings->getValue('product_image_field'), $cacheability);
+      $image = $this->imageData($variation, (string) $settings->getValue('product_image_field'), $cacheability);
       if ($image) {
         $build['#props']['image'] = $image;
       }
@@ -159,45 +160,6 @@ class ProductCardBuilder {
       return '';
     }
     return $this->currencyFormatter->format($price->getNumber(), $price->getCurrencyCode());
-  }
-
-  /**
-   * Reads the first image of a variation's media field.
-   *
-   * The card gets the image as data rather than a rendered field, so its
-   * template decides the crop with neo_image to fit the box it draws.
-   *
-   * @return array|null
-   *   The image prop (src, alt, width, height), or NULL when there is none.
-   */
-  protected function image(ProductVariationInterface $variation, string $field, CacheableMetadata $cacheability): ?array {
-    if ($field === '' || !$variation->hasField($field)) {
-      return NULL;
-    }
-    $media = $variation->get($field)->entity;
-    if (!$media instanceof MediaInterface) {
-      return NULL;
-    }
-    $cacheability->addCacheableDependency($media);
-    $source = $media->getSource()->getConfiguration()['source_field'] ?? '';
-    if ($source === '' || $media->get($source)->isEmpty()) {
-      return NULL;
-    }
-    /** @var \Drupal\image\Plugin\Field\FieldType\ImageItem $item */
-    $item = $media->get($source)->first();
-    $file = $item->entity;
-    if (!$file) {
-      return NULL;
-    }
-    $cacheability->addCacheableDependency($file);
-    return [
-      // A root-relative path: the image shape's src only accepts web paths
-      // and URLs, and neo_image reads a path as readily as a stream URI.
-      'src' => $this->fileUrlGenerator->generateString($file->getFileUri()),
-      'alt' => (string) ($item->alt ?? ''),
-      'width' => $item->width === NULL ? NULL : (int) $item->width,
-      'height' => $item->height === NULL ? NULL : (int) $item->height,
-    ];
   }
 
 }

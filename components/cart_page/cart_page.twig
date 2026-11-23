@@ -1,0 +1,84 @@
+{#
+  Cart | Page — one cart.
+
+  Rendered by neo_commerce in place of the cart form view's own output, so
+  everything here sits INSIDE Commerce's cart form. The quantity controls,
+  remove buttons, checkout and update buttons are the form's own elements:
+  they arrive in the `lines`, `checkout` and `update` slots as placeholders
+  that Views swaps for the real elements as the form renders.
+
+  CONTRACT — print every slot you are given, once:
+
+  - `lines`, `checkout` and `update` carry form elements. Leave one out and
+    that control disappears from the cart; print one twice and only the
+    first copy works.
+  - `update` is the submit the quantity controls use. When quantities apply
+    immediately the module hides it; do not delete it.
+
+  The title is the page's H1 (`title_tag`). Hide the theme's page title block
+  on cart pages so the page has one.
+
+  Own this file: it is copied into your theme on install and yours to restyle
+  from there. Run `drush cr` after editing.
+#}
+<div{{ attributes.addClass(['cart-page']) }}>
+  {% if kicker or title or intro %}
+    <header class="cart-page__head mb-8 text-center">
+      {% if kicker %}
+        <p class="cart-page__kicker mb-3 text-xs font-semibold uppercase tracking-widest text-accent">{{ kicker }}</p>
+      {% endif %}
+      {% if title %}
+        {% set tag = title_tag ?: 'h1' %}
+        <{{ tag }} class="cart-page__title text-4xl">{{ title }}</{{ tag }}>
+      {% endif %}
+      {% if intro %}
+        <p class="cart-page__intro mt-2 italic opacity-70">{{ intro }}</p>
+      {% endif %}
+    </header>
+  {% endif %}
+
+  {% if empty %}
+    <div class="cart-page__empty border px-6 py-14 text-center">
+      {% if empty_title %}
+        <h2 class="mb-2 text-2xl">{{ empty_title }}</h2>
+      {% endif %}
+      {% if empty_text %}
+        <p class="mb-5 italic opacity-70">{{ empty_text }}</p>
+      {% endif %}
+      {% if empty_cta_label and empty_cta_url %}
+        <a href="{{ empty_cta_url }}" class="btn btn-outline">{{ empty_cta_label }}</a>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="cart-page__layout grid items-start gap-8 lg:grid-cols-[1.35fr_0.65fr]">
+      <section class="cart-page__lines border">
+        {% if notice %}
+          <div class="cart-page__notice m-6 mb-0 flex items-start gap-2 border p-4">
+            {% if notice_icon %}
+              <span class="mt-1 shrink-0">{{ icon(notice_icon)|icon_only }}</span>
+            {% endif %}
+            <div>{{ notice }}</div>
+          </div>
+        {% endif %}
+        <div class="cart-page__items divide-y px-4 sm:px-6">
+          {{ lines }}
+        </div>
+      </section>
+
+      <aside class="cart-page__summary border p-4 sm:p-6 lg:sticky lg:top-24">
+        <h2 class="mb-5 text-2xl">{{ 'Order Summary'|t }}</h2>
+        <div class="cart-page__totals mb-4 border-b pb-4">{{ summary }}</div>
+        {% if footnote %}
+          <p class="cart-page__footnote mb-4 text-sm italic opacity-70">{{ footnote }}</p>
+        {% endif %}
+        <div class="cart-page__actions flex flex-col gap-3">
+          {{ checkout }}
+          {{ update }}
+        </div>
+        {% if continue_label and continue_url %}
+          <a href="{{ continue_url }}" class="cart-page__continue mt-4 block text-center text-xs font-semibold uppercase tracking-widest">{{ continue_label }}</a>
+        {% endif %}
+      </aside>
+    </div>
+  {% endif %}
+</div>

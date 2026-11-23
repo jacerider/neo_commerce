@@ -49,6 +49,7 @@ function neo_commerce_update_10002(): string {
   $defaults = [
     'cart_page_component' => 'neo_commerce:cart_page',
     'cart_overview_component' => 'neo_commerce:cart_overview',
+    'cart_line_component' => 'neo_commerce:cart_line',
     'cart_quantity_instant' => TRUE,
     'cart_overview_thumbnail_limit' => 8,
     'cart_explainer' => '',

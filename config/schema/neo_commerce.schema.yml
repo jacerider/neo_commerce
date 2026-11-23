@@ -127,6 +127,9 @@ neo_commerce:
     cart_overview_component:
       type: string
       label: 'Cart overview component'
+    cart_line_component:
+      type: string
+      label: 'Cart line component'
     cart_quantity_instant:
       type: boolean
       label: 'Apply quantity changes immediately'

@@ -49,6 +49,9 @@ class CartResponseBuilderTest extends CartKernelTestBase {
     'neo_modal',
     'neo_tooltip',
     'neo_alchemist',
+    'file',
+    'image',
+    'neo_image',
     'neo_commerce',
     'commerce_checkout',
   ];
@@ -390,7 +393,9 @@ class CartResponseBuilderTest extends CartKernelTestBase {
       'id="' . $wrapperId . '--messages"',
       $html
     );
-    $this->assertStringContainsString('A product', $html);
+    // Each line is named by its order item, which Commerce titles from the
+    // variation.
+    $this->assertStringContainsString('A thing', $html);
     // Both lines are back, each with the remove button the alter gave it.
     $this->assertStringContainsString('name="delete-order-item-0"', $html);
     $this->assertStringContainsString('name="delete-order-item-1"', $html);
@@ -439,7 +444,9 @@ class CartResponseBuilderTest extends CartKernelTestBase {
       '<div id="' . $wrapperId . '">',
       $html
     );
-    $this->assertStringContainsString('Your shopping cart is empty.', $html);
+    // The cart page component's empty state, for this cart's order type.
+    $this->assertStringContainsString('cart-page__empty', $html);
+    $this->assertStringContainsString('Your cart is empty', $html);
     // The live region survives the emptying, or the next message announced
     // into this cart would land nowhere.
     $this->assertStringContainsString(

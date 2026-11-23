@@ -351,6 +351,13 @@ class CommerceSettings extends SettingsBase {
       '#default_value' => $this->getValue('cart_overview_component'),
       '#required' => TRUE,
     ];
+    $page['cart_line_component'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Cart line component'),
+      '#description' => $this->t('Renders one line of a cart: image, name, price, quantity and remove.'),
+      '#default_value' => $this->getValue('cart_line_component'),
+      '#required' => TRUE,
+    ];
     $page['cart_quantity_instant'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Apply quantity changes immediately'),

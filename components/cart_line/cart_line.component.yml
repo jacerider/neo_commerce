@@ -1,0 +1,52 @@
+$schema: 'https://git.drupalcode.org/project/drupal/-/raw/10.1.x/core/modules/sdc/src/metadata.schema.json'
+name: 'Cart | Line'
+status: stable
+description: 'One line of a cart: image, name, meta line, line total, and the cart form''s quantity and remove controls. Rendered by neo_commerce into the cart page''s lines slot.'
+# Source template. `neo: false` keeps this module copy out of the component
+# picker; `neo_install: true` has neo_alchemist copy it into the front theme on
+# install, flipping the copy to `neo: true`. The theme copy is the one you
+# restyle. Strip `neo_install` from that copy -- the installer flips `neo` but
+# leaves the key behind, and a stale one trips drush neo:alchemist:validate.
+neo: false
+neo_install: true
+props:
+  type: object
+  properties:
+    title:
+      type: string
+      title: Name
+      examples: ['Chocolate Panettone']
+    url:
+      type: string
+      title: 'Product URL'
+      description: 'The product page with this line''s variation selected.'
+      examples: ['/market/gifts/chocolate-panettone?v=1']
+    meta:
+      type: string
+      title: 'Meta line'
+      description: 'The tagline field, from the variation or else the product.'
+      examples: ['Traditional · 1kg']
+    image:
+      type: image
+      title: Image
+      description: 'The first image of the image field, from the variation or else the product. The template crops it with neo_image.'
+    price:
+      type: string
+      title: 'Unit price'
+      examples: ['$34.00']
+    total:
+      type: string
+      title: 'Line total'
+      examples: ['$68.00']
+    count:
+      type: integer
+      title: Quantity
+      description: 'The line''s quantity as a number, for display. The control itself is the quantity slot.'
+      examples: [2]
+slots:
+  quantity:
+    title: 'Quantity control'
+    description: 'The cart form''s quantity element for this line. MUST be printed once.'
+  remove:
+    title: 'Remove button'
+    description: 'The cart form''s remove button for this line. MUST be printed once.'
