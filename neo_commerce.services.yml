@@ -52,6 +52,14 @@ services:
       - '@entity_type.manager'
       - '@string_translation'
 
+  neo_commerce.checkout_response:
+    class: Drupal\neo_commerce\Checkout\CheckoutResponseBuilder
+    arguments:
+      - '@entity_type.manager'
+      - '@messenger'
+      - '@string_translation'
+      - '@?commerce_payment.options_builder'
+
   neo_commerce.cart_copy:
     class: Drupal\neo_commerce\Cart\CartCopy
     arguments:

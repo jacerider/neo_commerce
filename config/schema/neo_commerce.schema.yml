@@ -265,3 +265,6 @@ neo_alchemist.neo_component_slot.related_products:
     limit:
       type: integer
       label: 'Most products from the category'
+
+commerce_checkout.commerce_checkout_flow.plugin.neo_single_page:
+  type: commerce_checkout_flow_with_panes_configuration

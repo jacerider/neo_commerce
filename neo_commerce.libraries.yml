@@ -23,3 +23,32 @@ variation:
     - core/drupal
     - core/drupalSettings
     - core/drupal.ajax
+
+checkout:
+  version: VERSION
+  neo:
+    scope: front
+  js:
+    src/js/checkout.ts: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+    - core/drupal.ajax
+    - core/once
+
+# Attached by CheckoutResponseBuilder::adoptStripe() in place of
+# commerce_stripe/payment_element, only when that library was there, so the
+# commerce_stripe dependencies below always exist when this is used.
+checkout_stripe:
+  version: VERSION
+  neo:
+    scope: front
+  js:
+    src/js/checkout-stripe.ts: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+    - core/once
+    - neo_commerce/checkout
+    - commerce_stripe/messages
+    - commerce_stripe/stripe
