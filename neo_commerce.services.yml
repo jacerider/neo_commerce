@@ -37,6 +37,12 @@ services:
       - '@string_translation'
       - '@request_stack'
 
+  neo_commerce.cart_copy:
+    class: Drupal\neo_commerce\Cart\CartCopy
+    arguments:
+      - '@neo_commerce.settings'
+      - '@entity_type.manager'
+
   neo_commerce.selected_variation:
     class: Drupal\neo_commerce\Product\SelectedVariation
     arguments:

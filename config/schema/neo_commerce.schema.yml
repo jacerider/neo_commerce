@@ -121,6 +121,102 @@ neo_commerce:
     modal_input_focus:
       type: boolean
       label: 'Focus the first input on open'
+    cart_page_component:
+      type: string
+      label: 'Cart page component'
+    cart_overview_component:
+      type: string
+      label: 'Cart overview component'
+    cart_quantity_instant:
+      type: boolean
+      label: 'Apply quantity changes immediately'
+    cart_overview_thumbnail_limit:
+      type: integer
+      label: 'Thumbnails per cart on the overview'
+    cart_explainer:
+      type: text
+      label: 'Explainer shown when a shopper has more than one cart'
+    cart_copy:
+      type: neo_commerce.cart_copy
+      label: 'Cart page copy, used for every order type'
+    cart_copy_types:
+      type: sequence
+      label: 'Cart page copy per order type'
+      sequence:
+        type: neo_commerce.cart_copy
+        label: 'Copy for one order type'
+    cart_overview:
+      type: mapping
+      label: 'Cart overview copy'
+      mapping:
+        kicker:
+          type: label
+          label: 'Kicker'
+        title:
+          type: label
+          label: 'Title'
+        intro:
+          type: label
+          label: 'Intro'
+        empty_title:
+          type: label
+          label: 'Empty title'
+        empty_text:
+          type: label
+          label: 'Empty text'
+        empty_cta_label:
+          type: label
+          label: 'Empty button label'
+        empty_cta_url:
+          type: string
+          label: 'Empty button link'
+
+# The copy one cart page prints. The site-wide `cart_copy` holds the
+# defaults; each `cart_copy_types` entry holds an order type's overrides, and
+# an empty value there means "use the default".
+neo_commerce.cart_copy:
+  type: mapping
+  label: 'Cart page copy'
+  mapping:
+    kicker:
+      type: label
+      label: 'Kicker'
+    title:
+      type: label
+      label: 'Title'
+    intro:
+      type: label
+      label: 'Intro'
+    notice:
+      type: text
+      label: 'Notice'
+    notice_icon:
+      type: string
+      label: 'Notice icon'
+    footnote:
+      type: label
+      label: 'Footnote'
+    checkout_label:
+      type: label
+      label: 'Checkout button label'
+    continue_label:
+      type: label
+      label: 'Continue shopping label'
+    continue_url:
+      type: string
+      label: 'Continue shopping link'
+    empty_title:
+      type: label
+      label: 'Empty title'
+    empty_text:
+      type: label
+      label: 'Empty text'
+    empty_cta_label:
+      type: label
+      label: 'Empty button label'
+    empty_cta_url:
+      type: string
+      label: 'Empty button link'
 
 # The block carries nothing but the variation. Everything else it renders --
 # label, icon, dropdown, empty behaviour -- lives in neo_commerce.settings, so

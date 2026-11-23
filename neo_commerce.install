@@ -37,3 +37,60 @@ function neo_commerce_update_10001(): string {
     ? sprintf('Removed product_card_image_style from: %s.', implode(', ', $cleared))
     : 'No product_card_image_style setting to remove.';
 }
+
+/**
+ * Adds the cart page settings.
+ *
+ * Only the base config needs them: variations store just the keys they
+ * override and read everything else through the base.
+ */
+function neo_commerce_update_10002(): string {
+  $config = \Drupal::configFactory()->getEditable('neo_commerce.settings');
+  $defaults = [
+    'cart_page_component' => 'neo_commerce:cart_page',
+    'cart_overview_component' => 'neo_commerce:cart_overview',
+    'cart_quantity_instant' => TRUE,
+    'cart_overview_thumbnail_limit' => 8,
+    'cart_explainer' => '',
+    'cart_copy' => [
+      'kicker' => '',
+      'title' => 'Your cart',
+      'intro' => '',
+      'notice' => '',
+      'notice_icon' => '',
+      'footnote' => 'Taxes and delivery are calculated at checkout.',
+      'checkout_label' => '',
+      'continue_label' => 'Continue shopping',
+      'continue_url' => '',
+      'empty_title' => 'Your cart is empty',
+      'empty_text' => '',
+      'empty_cta_label' => 'Continue shopping',
+      'empty_cta_url' => '',
+    ],
+    'cart_copy_types' => [],
+    'cart_overview' => [
+      'kicker' => '',
+      'title' => 'Your cart',
+      'intro' => '',
+      'empty_title' => 'Your cart is empty',
+      'empty_text' => '',
+      'empty_cta_label' => 'Continue shopping',
+      'empty_cta_url' => '',
+    ],
+  ];
+
+  $added = [];
+  foreach ($defaults as $key => $value) {
+    if ($config->get($key) === NULL) {
+      $config->set($key, $value);
+      $added[] = $key;
+    }
+  }
+  if ($added) {
+    $config->save();
+  }
+
+  return $added
+    ? sprintf('Added cart page settings: %s.', implode(', ', $added))
+    : 'Cart page settings already present.';
+}

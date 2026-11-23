@@ -102,6 +102,14 @@ class CommerceSettingsTest extends CartKernelTestBase {
       'breadcrumb_root_label',
       'breadcrumb_root_link',
       'breadcrumb_current',
+      'cart_page_component',
+      'cart_overview_component',
+      'cart_quantity_instant',
+      'cart_overview_thumbnail_limit',
+      'cart_explainer',
+      'cart_copy',
+      'cart_copy_types',
+      'cart_overview',
     ];
     sort($expected);
     $actual = array_keys($config);

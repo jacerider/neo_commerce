@@ -3,6 +3,8 @@
 namespace Drupal\neo_commerce\Settings;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\neo_commerce\Cart\CartCopy;
 use Drupal\neo_settings\Plugin\SettingsBase;
 
 /**
@@ -35,6 +37,16 @@ use Drupal\neo_settings\Plugin\SettingsBase;
  * )
  */
 class CommerceSettings extends SettingsBase {
+
+  /**
+   * {@inheritdoc}
+   *
+   * The per-type copy is keyed by order type id, and an order type added
+   * after the config was saved has no key yet. A deep merge intersects the
+   * submitted values with the stored ones and would drop that new key, so the
+   * whole map is taken as submitted.
+   */
+  protected $strictParents = [['cart_copy_types']];
 
   /**
    * {@inheritdoc}
@@ -130,6 +142,8 @@ class CommerceSettings extends SettingsBase {
       '#title' => $this->t('Checkout button label'),
       '#default_value' => $this->getValue('cart_checkout_label'),
     ];
+
+    $this->buildCartPageForm($form, $parents, $group);
 
     $form['cart_block'] = [
       '#type' => 'details',
@@ -302,6 +316,224 @@ class CommerceSettings extends SettingsBase {
     ];
 
     return $form;
+  }
+
+  /**
+   * Builds the cart page tab.
+   *
+   * @param array $form
+   *   The settings form.
+   * @param array $parents
+   *   The shared form parents.
+   * @param string $group
+   *   The vertical tabs group.
+   */
+  protected function buildCartPageForm(array &$form, array $parents, string $group): void {
+    $form['cart_page'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Cart page'),
+      '#group' => $group,
+      '#parents' => $parents,
+    ];
+    $page = &$form['cart_page'];
+
+    $page['cart_page_component'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Cart page component'),
+      '#description' => $this->t('Renders one cart, as <em>provider:name</em>. The theme copy takes over automatically once it is ejected.'),
+      '#default_value' => $this->getValue('cart_page_component'),
+      '#required' => TRUE,
+    ];
+    $page['cart_overview_component'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Cart overview component'),
+      '#description' => $this->t('Renders the overview a shopper with more than one cart sees at /cart.'),
+      '#default_value' => $this->getValue('cart_overview_component'),
+      '#required' => TRUE,
+    ];
+    $page['cart_quantity_instant'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Apply quantity changes immediately'),
+      '#description' => $this->t('Plus, minus and typed quantities update the cart without pressing the update button, which is then hidden.'),
+      '#default_value' => $this->getValue('cart_quantity_instant'),
+    ];
+    $page['cart_overview_thumbnail_limit'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Thumbnails per cart on the overview'),
+      '#description' => $this->t('Further items are counted in a "+N" chip.'),
+      '#min' => 1,
+      '#default_value' => $this->getValue('cart_overview_thumbnail_limit'),
+    ];
+    $page['cart_explainer'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Explainer'),
+      '#description' => $this->t('Shown under the carts when a shopper has more than one, for example why each checks out on its own. Allows @tags. Leave empty for none.', [
+        '@tags' => $this->allowedTagsText(),
+      ]),
+      '#rows' => 3,
+      '#default_value' => $this->getValue('cart_explainer'),
+    ];
+
+    $page['cart_copy'] = $this->copyElements(
+      (array) $this->getValue('cart_copy'),
+      array_merge($parents, ['cart_copy']),
+      TRUE
+    ) + [
+      '#type' => 'details',
+      '#title' => $this->t('Cart copy'),
+      '#description' => $this->t('Used by every cart unless its order type below says otherwise.'),
+      '#open' => TRUE,
+    ];
+
+    $page['cart_overview'] = $this->overviewElements(
+      (array) $this->getValue('cart_overview'),
+      array_merge($parents, ['cart_overview'])
+    ) + [
+      '#type' => 'details',
+      '#title' => $this->t('Overview copy'),
+      '#description' => $this->t('The page a shopper with more than one cart sees at /cart, and the empty state when every cart is empty.'),
+    ];
+
+    $types = (array) $this->getValue('cart_copy_types');
+    $orderTypes = \Drupal::entityTypeManager()
+      ->getStorage('commerce_order_type')
+      ->loadMultiple();
+    foreach ($orderTypes as $id => $orderType) {
+      $page['cart_copy_types'][$id] = $this->copyElements(
+        (array) ($types[$id] ?? []),
+        array_merge($parents, ['cart_copy_types', $id]),
+        FALSE
+      ) + [
+        '#type' => 'details',
+        '#title' => $this->t('Order type: @label', [
+          '@label' => $orderType->label(),
+        ]),
+        '#description' => $this->t('Leave a field empty to use the cart copy above.'),
+      ];
+    }
+  }
+
+  /**
+   * Builds the fields for one set of cart copy.
+   *
+   * @param array $values
+   *   The stored values.
+   * @param array $parents
+   *   The parents the values are stored under.
+   * @param bool $defaults
+   *   Whether these are the defaults, rather than an order type's overrides.
+   *
+   * @return array
+   *   The elements.
+   */
+  protected function copyElements(array $values, array $parents, bool $defaults): array {
+    $text = function (string $key, $title, $description = NULL) use ($values, $parents): array {
+      return [
+        '#type' => 'textfield',
+        '#title' => $title,
+        '#description' => $description,
+        '#parents' => array_merge($parents, [$key]),
+        '#default_value' => $values[$key] ?? '',
+      ];
+    };
+    $link = $this->t('A path on this site such as /market, &lt;front&gt;, or a full URL.');
+
+    $elements = [
+      'kicker' => $text('kicker', $this->t('Kicker'), $this->t('The small line above the title.')),
+      'title' => $text('title', $this->t('Title'), $defaults ? NULL : $this->t('Also names this cart on the overview. Empty uses the order type label there.')),
+      'intro' => $text('intro', $this->t('Intro')),
+      'notice' => [
+        '#type' => 'textarea',
+        '#title' => $this->t('Notice'),
+        '#description' => $this->t('A boxed note above the items, such as delivery terms. Allows @tags.', [
+          '@tags' => $this->allowedTagsText(),
+        ]),
+        '#rows' => 2,
+        '#parents' => array_merge($parents, ['notice']),
+        '#default_value' => $values['notice'] ?? '',
+      ],
+      'notice_icon' => [
+        '#type' => 'neo_icon_select',
+        '#title' => $this->t('Notice icon'),
+        '#parents' => array_merge($parents, ['notice_icon']),
+        '#default_value' => $values['notice_icon'] ?? '',
+      ],
+      'footnote' => $text('footnote', $this->t('Footnote'), $this->t('Under the order summary.')),
+      'checkout_label' => $text('checkout_label', $this->t('Checkout button label'), $defaults ? $this->t('Empty uses the checkout label on the Cart form tab.') : NULL),
+      'continue_label' => $text('continue_label', $this->t('Continue shopping label')),
+      'continue_url' => $text('continue_url', $this->t('Continue shopping link'), $link),
+      'empty_title' => $text('empty_title', $this->t('Empty title')),
+      'empty_text' => $text('empty_text', $this->t('Empty text')),
+      'empty_cta_label' => $text('empty_cta_label', $this->t('Empty button label')),
+      'empty_cta_url' => $text('empty_cta_url', $this->t('Empty button link'), $link),
+    ];
+    $elements['continue_url']['#element_validate'][] = [static::class, 'validateLink'];
+    $elements['empty_cta_url']['#element_validate'][] = [static::class, 'validateLink'];
+    return $elements;
+  }
+
+  /**
+   * Builds the fields for the overview copy.
+   *
+   * @param array $values
+   *   The stored values.
+   * @param array $parents
+   *   The parents the values are stored under.
+   *
+   * @return array
+   *   The elements.
+   */
+  protected function overviewElements(array $values, array $parents): array {
+    $labels = [
+      'kicker' => $this->t('Kicker'),
+      'title' => $this->t('Title'),
+      'intro' => $this->t('Intro'),
+      'empty_title' => $this->t('Empty title'),
+      'empty_text' => $this->t('Empty text'),
+      'empty_cta_label' => $this->t('Empty button label'),
+      'empty_cta_url' => $this->t('Empty button link'),
+    ];
+    $elements = [];
+    foreach ($labels as $key => $title) {
+      $elements[$key] = [
+        '#type' => 'textfield',
+        '#title' => $title,
+        '#parents' => array_merge($parents, [$key]),
+        '#default_value' => $values[$key] ?? '',
+      ];
+    }
+    $elements['empty_cta_url']['#element_validate'][] = [static::class, 'validateLink'];
+    return $elements;
+  }
+
+  /**
+   * Validates a link field against what CartCopy::url() accepts.
+   *
+   * @param array $element
+   *   The element.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   */
+  public static function validateLink(array &$element, FormStateInterface $form_state): void {
+    $value = trim((string) $element['#value']);
+    if ($value !== '' && !CartCopy::url($value)) {
+      $form_state->setError($element, new TranslatableMarkup('%title must be a path on this site starting with /, &lt;front&gt;, or a full http(s) URL.', [
+        '%title' => $element['#title'],
+      ]));
+    }
+  }
+
+  /**
+   * Lists the tags a rich cart value allows, for form descriptions.
+   *
+   * @return string
+   *   The tags, such as "<strong>, <em>".
+   */
+  protected function allowedTagsText(): string {
+    return implode(', ', array_map(
+      static fn (string $tag): string => '<' . $tag . '>',
+      CartCopy::ALLOWED_TAGS
+    ));
   }
 
   /**
