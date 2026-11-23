@@ -73,3 +73,23 @@ summary** that lists every failure. _Avoid:_ accessibility pass, error walker.
 **Clean-keys event** — the event that collects the user-input keys an ajax add to cart
 preserves; everything else in the posted values is discarded so the form rebuilds empty.
 _Avoid:_ preserve-keys event, keep keys.
+
+## The single-page checkout
+
+**Single page**: the `neo_single_page` checkout flow: one visible step, then Commerce's
+payment and complete steps. _Avoid:_ one-page checkout, onepage.
+
+**Save**: the hidden ajax submit that validates and stores every pane without leaving
+the page; answered by the `neoCheckoutSaved` command. _Avoid:_ autosave.
+
+**Handover**: on Place order, the save followed by the gateway's own confirm in the
+browser (Stripe's `confirmPayment`). _Avoid:_ two-phase submit.
+
+**Kept pane**: a pane whose markup a response must never replace, because it holds a
+gateway iframe (`stripe_review`).
+
+**Redraw**: the per-pane response that stands in for Commerce's whole-form ajax refresh
+on the single page. _Avoid:_ form refresh.
+
+**Radio cards**: a set of radios drawn as cards that folds to the chosen option behind
+a Change button.

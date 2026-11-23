@@ -1,6 +1,6 @@
 ---
 name: neo-commerce
-description: Configure and extend neo_commerce: the ajax cart for Drupal Commerce on Neo. Use when asked to add or tune ajax add-to-cart, open the cart in a modal or shelf after adding, place or restyle the cart summary block (the cart_quick SDC), restyle or reword the /cart page (the cart_page, cart_line and cart_overview SDCs, cart copy per order type, the multi-cart overview, /cart/{order}, the compact cart in the modal, instant quantity updates), change cart button labels ("Update cart", "Checkout") or the remove/quantity controls, make the cart form update without a page reload, refresh the cart count from your own ajax response, add or scope a neo_commerce settings variation, subscribe to AddToCartCleanKeysEvent / AddToCartResponseEvent / CartFormAlterEvent, or debug why a cart count will not update or an add-to-cart validation error is not announced. Also covers laying out products with Alchemist: binding props to the selected variation (variations > field), the product_variation_field slot, and marked re-render on variation change. NOT for the checkout flow or payment gateways, and NOT for authoring page-building components (use neo-component).
+description: Configure and extend neo_commerce: the ajax cart for Drupal Commerce on Neo. Use when asked to add or tune ajax add-to-cart, open the cart in a modal or shelf after adding, place or restyle the cart summary block (the cart_quick SDC), restyle or reword the /cart page (the cart_page, cart_line and cart_overview SDCs, cart copy per order type, the multi-cart overview, /cart/{order}, the compact cart in the modal, instant quantity updates), change cart button labels ("Update cart", "Checkout") or the remove/quantity controls, make the cart form update without a page reload, refresh the cart count from your own ajax response, add or scope a neo_commerce settings variation, subscribe to AddToCartCleanKeysEvent / AddToCartResponseEvent / CartFormAlterEvent, or debug why a cart count will not update or an add-to-cart validation error is not announced. Also covers laying out products with Alchemist: binding props to the selected variation (variations > field), the product_variation_field slot, and marked re-render on variation change. Also covers the single-page checkout (the neo_single_page checkout flow, the checkout_page SDC, the Your details pane with inline log in, the Stripe Payment Element handover, live totals, Save this card, radio cards). NOT for writing payment gateway plugins, and NOT for authoring page-building components (use neo-component).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
@@ -253,6 +253,63 @@ Hide the theme's page title block on `commerce_cart.page` and
 Restyle the compact variant through the `compact` prop, not a second
 component.
 
+### The single-page checkout
+
+Pick **Single page (Neo)** as an order type's checkout flow
+(`/admin/commerce/config/checkout-flows`). Commerce's multistep flow is
+untouched. What it is:
+
+- One visible step, named **`review`** on purpose: commerce_stripe returns
+  from Stripe to `/checkout/{order}/review/return` whatever the flow, and
+  Commerce refuses a step the order is not on. Then `payment`, `complete`.
+- Default panes: `neo_contact` (Your details), `shipping_information`
+  (when commerce_shipping is installed), `payment_information`,
+  `stripe_review`; summary and coupon in the sidebar. Any pane stays
+  movable in the flow UI. Section headings are the panes' **display
+  labels**, set there.
+- A hidden ajax **save** button (`neo_checkout_save`, `#button_type`
+  secondary so inline address forms submit) validates and submits every
+  pane without leaving the page. `Drupal.neoCommerceCheckout.save(form)`
+  presses it and resolves `{valid, balance, refresh}` from the
+  `neoCheckoutSaved` command.
+- **Stripe**: `CheckoutResponseBuilder::adoptStripe()` swaps
+  `commerce_stripe/payment_element` for `neo_commerce/checkout_stripe` and
+  moves its settings to `drupalSettings.neoCommerceStripe`. On Place order:
+  `elements.submit()`, save, `elements.fetchUpdates()` when the balance or
+  intent changed, `confirmPayment(redirect: always)`. Only Place order is
+  caught; other submit buttons post normally. Payment needs JavaScript.
+- Any other gateway: Place order goes to `payment` as usual.
+- The order's payment option follows the radios before the panes build
+  (`syncPaymentOption()`), so the Stripe pane follows a switch between a
+  saved card and a new one (Stripe cancels the old intent on that save).
+- **Live totals**: `form_ajax_response_builder` is decorated. On this flow
+  only, Commerce's whole-form `ajaxRefreshForm` (coupon, rate, address
+  recalculation) and the payment option switch answer with one replace per
+  pane, never touching `stripe_review` unless the option changed, plus the
+  sidebar panes, the phone bar total and a polite live region.
+- **Save this card**: intents start without `setup_future_usage` on this
+  flow (`CheckoutStripeSubscriber`); signed-in shoppers get an unticked box
+  that sets it on the intent at save time. Guests never see it.
+- **Radio cards**: every radios element with more than one option gets
+  `data-neo-radio-cards`; saved addresses become radios on this flow. The
+  page script folds a set to the chosen option behind "Change".
+
+Words: **Checkout** tab (kicker, title, intro, summary heading and toggle,
+Place order label, secure note; per order type overrides) and **Stripe card
+form** (font, font stylesheet URL, colours, border radius, passed to
+Stripe's Appearance API since the iframe ignores the theme's CSS).
+
+Markup: the theme copy at `<theme>/components/checkout_page/`. Print every
+slot once (`errors`, `details`, `shipping`, `payment`, `extra`, `actions`,
+`summary`); keep `data-neo-checkout-summary-toggle`, `aria-controls` and
+`data-neo-checkout-total`. The summary lines are
+`neo-commerce-checkout-summary.html.twig`, overridable in the theme. Hide
+the page title block on `/checkout/*`.
+
+Apple Pay and Google Pay show inside the Payment Element when the Stripe
+account allows them: turn Apple Pay on in the Stripe dashboard and register
+the production domain with Stripe. Nothing in code.
+
 ### Restyle the summary
 
 Edit the theme's copy at `<theme>/components/cart_quick/`, keep
@@ -349,6 +406,11 @@ image once. Its next/prev listeners sit on the inner `<a>` of
 | Cart in the modal turns full-page after a change | the hidden `neo_cart_compact` value is missing from the posted form |
 | `/cart/{id}` is 403 | the order is not one of the current shopper's carts (placed, or someone else's) |
 | A new order type's cart copy does not save | `cart_copy_types` is no longer a strict parent in `CommerceSettings` |
+| Place order does nothing on the single page | commerce_stripe's own script is attached: `adoptStripe()` found no `commerce_stripe/payment_element` to swap, or a theme attached it again |
+| No card form on the single page | the order has no payment gateway; `syncPaymentOption()` sets one only when `payment_information` is on the `review` step and visible |
+| Card typed into Stripe vanishes after a coupon or rate change | that ajax went to core instead of the decorator: its callback is not `ajaxRefreshForm`, or the form object is not `SinglePage` |
+| Totals stale after a change on the single page | the response came from a callback the decorator does not narrow, so the sidebar was not redrawn |
+| Inline log in throws "must not have #validate handlers" | a button on the page has `#validate`; Commerce's inline address forms refuse that |
 | Errors announced but unexplained | the inline message needs its id, which `ThemeHooks::preprocessFormElement()` wraps around the rendered content |
 
 ## Files
@@ -365,5 +427,13 @@ image once. Its next/prev listeners sit on the inner `<a>` of
 | `tests/src/Kernel/CartPageControllerTest.php` | /cart dispatch, overview cards, thumbnail cap, back link, cart access |
 | `tests/src/Kernel/CartCopyTest.php` | per-type copy fallbacks, link and markup filtering |
 | `tests/src/Nightwatch/Tests/instantQuantityTest.js` | instant plus and zero-plus-Enter against the running site |
+| `src/Plugin/Commerce/CheckoutFlow/SinglePage.php` | the `neo_single_page` flow: steps, default panes, the save button |
+| `src/Plugin/Commerce/CheckoutPane/ContactDetails.php` | `neo_contact`: email, inline log in, account chip |
+| `src/Checkout/CheckoutResponseBuilder.php` | option sync, Stripe adoption and appearance, save card, save and refresh responses |
+| `src/Checkout/CheckoutAjaxResponseBuilder.php` | the `form_ajax_response_builder` decorator, scoped to this flow |
+| `src/Checkout/CheckoutPage.php` | the component, slots, summary lines, pane pre_render (shipping split, radio cards) |
+| `src/js/checkout.ts`, `src/js/checkout-stripe.ts` | the save promise, summary toggle, log in toggle, Enter routing, radio cards; the Stripe handover |
+| `tests/src/Kernel/SinglePageCheckoutTest.php` | flow, save, option sync, redraws, decorator scope, log in, save card |
+| `tests/src/Nightwatch/Tests/singlePageCheckoutTest.js` | the Stripe path against a running site |
 | `tests/src/Unit/AjaxFormErrorsTest.php` | the ARIA walker |
 | `tests/src/Kernel/` | settings schema, cart summary build and cacheability |

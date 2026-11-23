@@ -200,6 +200,31 @@ during checkout. The template is neo_base's `page--simple.html.twig`;
 override it in your theme to restyle the bar. Needs a neo_base based theme,
 or any theme providing `page--simple.html.twig`.
 
+## The single-page checkout
+
+A checkout flow plugin, **Single page (Neo)**, picked per order type in
+Commerce's checkout flow settings. Details, shipping (with Commerce
+Shipping), payment and a sticky order summary share one page with one Place
+order button; Commerce's multistep flow stays available.
+
+- It is built from Commerce's own checkout panes, so contrib panes keep
+  working and can be moved in the flow UI.
+- **Your details** (`neo_contact`) takes the email and lets a returning
+  customer log in without leaving the page.
+- Changing the shipping rate, a coupon or a gift card updates the summary
+  and total in place.
+- With Stripe's Payment Element, Place order saves the page first and then
+  confirms the payment, so the order holds what the shopper typed. Other
+  gateways go to Commerce's payment step as before.
+- Signed-in shoppers can pay with a saved card or tick **Save this card**.
+- Choices (saved addresses, shipping rates, payment options) fold to the
+  chosen one as cards.
+- Layout: the `checkout_page` component, copied into the theme. Words and
+  Stripe's card form styling: the **Checkout** settings tab.
+
+The visible step is named `review` because commerce_stripe returns from
+Stripe to that step whatever the flow. Payment by card needs JavaScript.
+
 ## What a theme copy must keep
 
 `cart_quick` is copied into the theme and yours to restyle, with two rules:
@@ -232,6 +257,10 @@ preset it renders with. They are selected explicitly, never by condition, so
 adding one never changes a cart you did not point at it.
 
 Nothing here belongs in `settings.php` or in code.
+
+Also for `checkout_page`: every slot printed once, the summary toggle's
+`data-neo-checkout-summary-toggle` and `aria-controls`, and
+`data-neo-checkout-total`.
 
 ## Requirements
 
