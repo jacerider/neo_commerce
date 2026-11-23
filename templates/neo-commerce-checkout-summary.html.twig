@@ -8,7 +8,10 @@
  *
  * Available variables:
  * - items: One per order line: title, meta (the tagline field, may be
- *   empty), total (formatted), count (quantity).
+ *   empty), total (formatted), count (quantity), image (src, alt, width,
+ *   height from the product image field; empty when there is none). The
+ *   image arrives as data and is cropped here with neo_image, so the crop
+ *   matches the box: change both together.
  * - totals: Commerce's order total summary (subtotal, adjustments, total).
  *
  * Override in the theme to restyle.
@@ -18,7 +21,15 @@
   <ul class="neo-checkout-summary__items">
     {% for item in items %}
       <li class="neo-checkout-summary__item">
-        <span class="neo-checkout-summary__count" aria-label="{{ 'Quantity'|t }}">{{ item.count }}</span>
+        <span class="neo-checkout-summary__image">
+          {% if item.image.src %}
+            {{ neo_image_style(item.image.src, {focal: {width: 120, height: 120}}, item.image.alt, '', {class: ['neo-checkout-summary__img']}) }}
+          {% endif %}
+          <span class="neo-checkout-summary__count">
+            <span class="visually-hidden">{{ 'Quantity'|t }}</span>
+            {{ item.count }}
+          </span>
+        </span>
         <span class="neo-checkout-summary__body">
           <span class="neo-checkout-summary__line">
             <span class="neo-checkout-summary__title">{{ item.title }}</span>

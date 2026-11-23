@@ -64,8 +64,8 @@
   display: none;
 }
 
-/* The summary lines: a quantity badge, the name and total on one line, the
-   meta line under them. */
+/* The summary lines: the image with the quantity on its corner, the name
+   and total on one line, the meta line under them. */
 .neo-checkout-summary__items {
   @apply m-0 list-none p-0;
 }
@@ -74,8 +74,17 @@
   @apply flex gap-4 py-3;
 }
 
+.neo-checkout-summary__image {
+  @apply relative block size-15 shrink-0 border;
+}
+
+.neo-checkout-summary__img {
+  @apply size-full object-cover;
+}
+
+/* The quantity sits on the image's corner. */
 .neo-checkout-summary__count {
-  @apply inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full border px-1.5 text-xs tabular-nums;
+  @apply absolute -right-2 -top-2 inline-flex h-5.5 min-w-5.5 items-center justify-center rounded-full border px-1.5 text-[0.64rem] leading-none tabular-nums;
 }
 
 .neo-checkout-summary__body {

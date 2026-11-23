@@ -199,7 +199,6 @@ class CartPageBuilder {
     $settings = $this->settings->getActive();
     $copy = $this->copy->forOrderType($cart->bundle());
     $limit = max(1, (int) $settings->getValue('cart_overview_thumbnail_limit'));
-    $field = (string) $settings->getValue('product_image_field');
 
     $items = $cart->getItems();
     $thumbnails = [];
@@ -210,13 +209,7 @@ class CartPageBuilder {
       if ($variation instanceof ProductVariationInterface) {
         $sources[] = $variation->getProduct();
       }
-      $image = NULL;
-      foreach (array_filter($sources) as $source) {
-        $image = $this->imageData($source, $field, $cacheability);
-        if ($image) {
-          break;
-        }
-      }
+      $image = $this->firstImage($sources, $cacheability);
       $thumbnails[] = [
         'src' => $image['src'] ?? '',
         'alt' => $image['alt'] ?? (string) $item->label(),
@@ -379,8 +372,8 @@ class CartPageBuilder {
   /**
    * Returns the order's lines as plain data, for an order summary.
    *
-   * The same name, meta line and totals as the cart lines, without their
-   * controls, for the single-page checkout's summary.
+   * The same image, name, meta line and totals as the cart lines, without
+   * their controls, for the single-page checkout's summary.
    *
    * @param \Drupal\commerce_order\Entity\OrderInterface $order
    *   The order.
@@ -388,7 +381,8 @@ class CartPageBuilder {
    *   Collects the lines' cacheability.
    *
    * @return array[]
-   *   One array per line: title, meta, total, count.
+   *   One array per line: title, meta, total, count, and image (the image
+   *   prop data: src, alt, width, height; NULL when there is none).
    */
   public function summaryItems(OrderInterface $order, CacheableMetadata $cacheability): array {
     $field = (string) $this->settings->getActive()
@@ -407,9 +401,33 @@ class CartPageBuilder {
         'meta' => $this->firstString($sources, $field),
         'total' => $this->format($item->getTotalPrice()),
         'count' => (int) (float) $item->getQuantity(),
+        'image' => $this->firstImage($sources, $cacheability),
       ];
     }
     return $items;
+  }
+
+  /**
+   * Returns the first image found on the sources, as image prop data.
+   *
+   * @param \Drupal\Core\Entity\FieldableEntityInterface[] $sources
+   *   The entities to read, in order: the variation, then its product.
+   * @param \Drupal\Core\Cache\CacheableMetadata $cacheability
+   *   Collects the image's dependencies.
+   *
+   * @return array|null
+   *   The image (src, alt, width, height), or NULL when none has one.
+   */
+  protected function firstImage(array $sources, CacheableMetadata $cacheability): ?array {
+    $field = (string) $this->settings->getActive()
+      ->getValue('product_image_field');
+    foreach (array_filter($sources) as $source) {
+      $image = $this->imageData($source, $field, $cacheability);
+      if ($image) {
+        return $image;
+      }
+    }
+    return NULL;
   }
 
   /**
@@ -462,13 +480,9 @@ class CartPageBuilder {
       ],
       '#slots' => [],
     ];
-    $field = (string) $settings->getValue('product_image_field');
-    foreach ($sources as $source) {
-      $image = $this->imageData($source, $field, $cacheability);
-      if ($image) {
-        $build['#props']['image'] = $image;
-        break;
-      }
+    $image = $this->firstImage($sources, $cacheability);
+    if ($image) {
+      $build['#props']['image'] = $image;
     }
     if ($quantity) {
       $build['#slots']['quantity'] = $quantity;
