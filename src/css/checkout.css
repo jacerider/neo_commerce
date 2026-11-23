@@ -27,3 +27,25 @@
 [data-neo-checkout][aria-busy='true'] [data-neo-checkout-place] {
   @apply opacity-60 pointer-events-none;
 }
+
+/* Radio cards: each option a card. The look is the theme's; this is only
+   what the folding needs. */
+[data-neo-radio-cards] .js-form-type-radio {
+  @apply border p-3;
+}
+
+[data-neo-radio-cards] .js-form-type-radio:has(:checked) {
+  @apply border-current;
+}
+
+[data-neo-radio-cards][data-collapsed] .js-form-type-radio:not(:has(:checked)) {
+  display: none;
+}
+
+.neo-radio-cards__toggle {
+  @apply mt-2 text-xs font-semibold uppercase tracking-widest underline;
+}
+
+.neo-radio-cards__toggle[hidden] {
+  display: none;
+}

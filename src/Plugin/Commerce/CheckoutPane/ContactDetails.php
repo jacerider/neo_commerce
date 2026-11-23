@@ -71,6 +71,13 @@ class ContactDetails extends CheckoutPaneBase implements TrustedCallbackInterfac
   protected $requestStack;
 
   /**
+   * The element info manager.
+   *
+   * @var \Drupal\Core\Render\ElementInfoManagerInterface
+   */
+  protected $elementInfo;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(
@@ -93,6 +100,7 @@ class ContactDetails extends CheckoutPaneBase implements TrustedCallbackInterfac
     $instance->currentUser = $container->get('current_user');
     $instance->userAuth = $container->get('user.auth');
     $instance->requestStack = $container->get('request_stack');
+    $instance->elementInfo = $container->get('element_info');
     return $instance;
   }
 
@@ -171,7 +179,12 @@ class ContactDetails extends CheckoutPaneBase implements TrustedCallbackInterfac
         'class' => ['neo-checkout-login'],
         'data-neo-checkout-login' => '',
       ],
-      '#pre_render' => [[static::class, 'preRenderLogin']],
+      // The container's own callbacks are kept: a #pre_render set at build
+      // time replaces the type's defaults rather than adding to them.
+      '#pre_render' => array_merge(
+        $this->elementInfo->getInfoProperty('container', '#pre_render', []),
+        [[static::class, 'preRenderLogin']]
+      ),
     ];
     $pane_form['login']['password'] = [
       '#type' => 'password',

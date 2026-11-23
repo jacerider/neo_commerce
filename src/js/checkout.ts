@@ -228,8 +228,46 @@ const save = (form: HTMLFormElement): Promise<SaveResult> => {
   };
   document.addEventListener('keydown', onKeydown);
 
+  /**
+   * Radio cards: a choice folds to the chosen option once made.
+   *
+   * The server marks each set of radios worth folding (saved addresses,
+   * shipping rates, payment options) `data-neo-radio-cards`. With an option
+   * chosen, the others hide behind a "Change" button; choosing again folds
+   * the set back. Without script, or with nothing chosen, they are plain
+   * radios. The radios themselves are untouched, so keyboard and screen
+   * reader use are the browser's own.
+   */
+  const attachRadioCards = (group: HTMLElement): void => {
+    const radios = Array.from(
+      group.querySelectorAll<HTMLInputElement>('input[type="radio"]'),
+    );
+    if (radios.length < 2) {
+      return;
+    }
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'neo-radio-cards__toggle';
+    toggle.textContent = Drupal.t('Change');
+    group.appendChild(toggle);
+
+    const fold = (folded: boolean): void => {
+      group.toggleAttribute('data-collapsed', folded);
+      toggle.setAttribute('aria-expanded', folded ? 'false' : 'true');
+      toggle.hidden = !folded;
+    };
+    fold(radios.some((radio) => radio.checked));
+    toggle.addEventListener('click', () => {
+      fold(false);
+      (radios.find((radio) => radio.checked) || radios[0]).focus();
+    });
+    group.addEventListener('change', () => fold(true));
+  };
+
   Drupal.behaviors.neoCommerceCheckout = {
     attach: (context: HTMLElement) => {
+      once('neo-radio-cards', '[data-neo-radio-cards]', context)
+        .forEach((group) => attachRadioCards(group as HTMLElement));
       once('neo-checkout-login', '[data-neo-checkout-login-toggle]', context)
         .forEach((toggle) => attachLoginToggle(toggle as HTMLButtonElement));
       if (context !== document as unknown as HTMLElement) {

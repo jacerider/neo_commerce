@@ -6,6 +6,8 @@ namespace Drupal\neo_commerce\Checkout;
 
 use CommerceGuys\Intl\Formatter\CurrencyFormatterInterface;
 use Drupal\commerce_order\Entity\OrderInterface;
+use Drupal\Core\Render\Element;
+use Drupal\Core\Render\ElementInfoManagerInterface;
 use Drupal\Core\Security\TrustedCallbackInterface;
 use Drupal\neo_settings\SettingsRepositoryInterface;
 
@@ -38,18 +40,21 @@ class CheckoutPage implements TrustedCallbackInterface {
    *   The checkout copy resolver.
    * @param \CommerceGuys\Intl\Formatter\CurrencyFormatterInterface $currencyFormatter
    *   The currency formatter.
+   * @param \Drupal\Core\Render\ElementInfoManagerInterface $elementInfo
+   *   The element info manager.
    */
   public function __construct(
     protected SettingsRepositoryInterface $settings,
     protected CheckoutCopy $copy,
     protected CurrencyFormatterInterface $currencyFormatter,
+    protected ElementInfoManagerInterface $elementInfo,
   ) {}
 
   /**
    * {@inheritdoc}
    */
   public static function trustedCallbacks() {
-    return ['preRender'];
+    return ['preRender', 'preRenderPane'];
   }
 
   /**
@@ -89,6 +94,21 @@ class CheckoutPage implements TrustedCallbackInterface {
       ],
     ];
     $form['#pre_render'][] = [static::class, 'preRender'];
+    foreach ($paneIds as $paneId) {
+      if (isset($form[$paneId]['#type'])) {
+        // Set before the form merges the element type's defaults, which it
+        // does with +=, so the type's own callbacks have to be kept here.
+        $form[$paneId]['#pre_render'] = array_merge(
+          $this->elementInfo->getInfoProperty(
+            $form[$paneId]['#type'],
+            '#pre_render',
+            []
+          ),
+          $form[$paneId]['#pre_render'] ?? [],
+          [[static::class, 'preRenderPane']]
+        );
+      }
+    }
   }
 
   /**
@@ -159,6 +179,73 @@ class CheckoutPage implements TrustedCallbackInterface {
       '#weight' => -100,
     ];
     return $element;
+  }
+
+  /**
+   * Prepares one pane's markup for the page.
+   *
+   * Runs whenever the pane renders, on the page and on its own in an ajax
+   * response, so what it adds comes back with every redraw.
+   *
+   * - Every set of radios with a choice to make (saved addresses, shipping
+   *   rates, payment options) is marked `data-neo-radio-cards`, for the
+   *   theme to draw as cards and the page script to fold to the chosen one.
+   * - Commerce Shipping's pane is split into its two parts, the address and
+   *   the method, so they can sit in separate cards as in the design. The
+   *   method's heading is the rate field's own label.
+   *
+   * @param array $element
+   *   The pane.
+   *
+   * @return array
+   *   The pane.
+   */
+  public static function preRenderPane(array $element): array {
+    static::markRadioCards($element);
+
+    if (isset($element['shipping_profile'], $element['shipments'])) {
+      $element['neo_shipping_address'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['neo-checkout-shipping__address']],
+        '#weight' => -100,
+        'shipping_profile' => $element['shipping_profile'],
+      ];
+      $element['neo_shipping_method'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['neo-checkout-shipping__method']],
+        '#weight' => 100,
+        'shipments' => $element['shipments'],
+      ];
+      if (isset($element['recalculate_shipping'])) {
+        $element['neo_shipping_method']['recalculate_shipping'] =
+          $element['recalculate_shipping'];
+        unset($element['recalculate_shipping']);
+      }
+      unset($element['shipping_profile'], $element['shipments']);
+      $element['#attributes']['class'][] = 'neo-checkout-shipping';
+      $element['#sorted'] = FALSE;
+    }
+    return $element;
+  }
+
+  /**
+   * Marks every radios element offering more than one option.
+   *
+   * @param array $element
+   *   The element to walk.
+   */
+  protected static function markRadioCards(array &$element): void {
+    if (
+      ($element['#type'] ?? NULL) === 'radios' &&
+      count($element['#options'] ?? []) > 1
+    ) {
+      $element['#attributes']['data-neo-radio-cards'] = '';
+    }
+    foreach (Element::children($element) as $key) {
+      if (is_array($element[$key])) {
+        static::markRadioCards($element[$key]);
+      }
+    }
   }
 
   /**
