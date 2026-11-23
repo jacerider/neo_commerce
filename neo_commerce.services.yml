@@ -60,6 +60,18 @@ services:
       - '@string_translation'
       - '@?commerce_payment.options_builder'
 
+  neo_commerce.checkout_copy:
+    class: Drupal\neo_commerce\Checkout\CheckoutCopy
+    arguments:
+      - '@neo_commerce.settings'
+
+  neo_commerce.checkout_page:
+    class: Drupal\neo_commerce\Checkout\CheckoutPage
+    arguments:
+      - '@neo_commerce.settings'
+      - '@neo_commerce.checkout_copy'
+      - '@commerce_price.currency_formatter'
+
   neo_commerce.cart_copy:
     class: Drupal\neo_commerce\Cart\CartCopy
     arguments:

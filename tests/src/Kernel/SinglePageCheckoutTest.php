@@ -12,6 +12,7 @@ use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_product\Entity\ProductVariationType;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Render\RenderContext;
+use Drupal\neo_commerce\Checkout\CheckoutPage;
 use Drupal\neo_commerce\Plugin\Commerce\CheckoutFlow\SinglePage;
 use Drupal\Tests\commerce_cart\Kernel\CartKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
@@ -280,6 +281,70 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
     $this->assertContains('#edit-contact-information', $selectors);
     // The pane holding Stripe's iframe is never replaced.
     $this->assertNotContains('#edit-stripe-review', $selectors);
+  }
+
+  /**
+   * Copy per order type falls back to the defaults, field by field.
+   */
+  public function testCopyFallback(): void {
+    $this->config('neo_commerce.settings')
+      ->set('checkout_copy_types', [
+        'default' => ['title' => 'Shipping & Payment', 'kicker' => ''],
+      ])
+      ->save();
+    // The settings repository caches per request; start a fresh one.
+    foreach (['neo_commerce.settings', 'neo_commerce.checkout_copy'] as $id) {
+      $this->container->set($id, NULL);
+    }
+
+    $copy = $this->container->get('neo_commerce.checkout_copy')
+      ->forOrderType('default');
+    $this->assertSame('Shipping & Payment', $copy['title']);
+    $this->assertSame('Place order', $copy['place_order_label']);
+    $this->assertSame('', $copy['kicker']);
+  }
+
+  /**
+   * The panes move into the component's slots, the hidden values stay.
+   */
+  public function testPanesFillTheSlots(): void {
+    $form = [
+      '#theme' => ['commerce_checkout_form'],
+      '#neo_checkout_page' => [
+        'component' => 'neo_commerce:checkout_page',
+        'panes' => [
+          'contact_information',
+          'payment_information',
+          'stripe_review',
+          'customer_comments',
+        ],
+        'props' => ['title' => 'Checkout'],
+      ],
+      'contact_information' => ['#markup' => 'contact'],
+      'payment_information' => ['#markup' => 'payment'],
+      'stripe_review' => ['#markup' => 'stripe'],
+      'customer_comments' => ['#markup' => 'comments'],
+      'sidebar' => ['#markup' => 'summary'],
+      'actions' => ['#markup' => 'actions'],
+      'neo_error_summary' => ['#markup' => 'errors'],
+      'form_build_id' => ['#markup' => 'build id'],
+    ];
+
+    $form = CheckoutPage::preRender($form);
+
+    $this->assertArrayNotHasKey('#theme', $form);
+    $this->assertArrayHasKey('form_build_id', $form);
+    $slots = $form['neo_checkout_page']['#slots'];
+    $this->assertSame(['contact_information'], array_keys($slots['details']));
+    $this->assertSame(
+      ['payment_information', 'stripe_review'],
+      array_keys($slots['payment'])
+    );
+    $this->assertSame(['customer_comments'], array_keys($slots['extra']));
+    $this->assertSame(['sidebar'], array_keys($slots['summary']));
+    $this->assertSame(['actions'], array_keys($slots['actions']));
+    $this->assertSame(['neo_error_summary'], array_keys($slots['errors']));
+    $this->assertArrayNotHasKey('contact_information', $form);
   }
 
   /**

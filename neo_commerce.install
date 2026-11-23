@@ -141,3 +141,38 @@ function neo_commerce_update_10004(): string {
   $config->save();
   return 'Added the simple page layout settings, off.';
 }
+
+/**
+ * Adds the single-page checkout settings and copies its component.
+ *
+ * The checkout_page component lays out the neo_single_page checkout flow.
+ * The theme owns its copy, as with the cart page components: this puts it in
+ * the front theme and names it in the settings. Strip `neo_install: true`
+ * from the copy afterwards.
+ */
+function neo_commerce_update_10005(): string {
+  $config = \Drupal::configFactory()->getEditable('neo_commerce.settings');
+  $defaults = [
+    'checkout_page_component' => 'neo_commerce:checkout_page',
+    'checkout_copy' => [
+      'kicker' => '',
+      'title' => 'Checkout',
+      'intro' => '',
+      'summary_title' => 'Order Summary',
+      'summary_toggle_label' => 'Show order summary',
+      'place_order_label' => 'Place order',
+      'secure_note' => 'Encrypted & secure',
+    ],
+    'checkout_copy_types' => [],
+  ];
+  foreach ($defaults as $key => $value) {
+    if ($config->get($key) === NULL) {
+      $config->set($key, $value);
+    }
+  }
+  $config->save();
+
+  $results = \Drupal::service(InstallHooks::class)->claimCartPageComponents();
+  return 'Checkout page component: '
+    . ($results['checkout_page_component'] ?? 'unavailable') . '.';
+}

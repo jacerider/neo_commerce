@@ -42,33 +42,6 @@
 
 /* alert-500 and its contrast-picked -content partner rather than a hand-picked
    ramp step, so the summary stays legible in every colour scheme. */
-.form-error-summary {
-  @apply mb-4 border border-alert-500 p-4 text-alert-500;
-}
-
-/* After the block above, not before it: :has() takes the specificity of its
-   argument, so :not(:has(*)) adds nothing and only source order decides which
-   of the two rules wins. :empty would have outranked it; this does not. */
-.form-error-summary:not(:has(*)) {
-  @apply hidden;
-}
-
-/* The summary is focused programmatically after a failed submit, so it needs
-   a visible focus ring even though it is not otherwise interactive. */
-.form-error-summary:focus-visible {
-  @apply outline-2 outline-offset-2 outline-alert-500;
-}
-
-/* No text-base here: in Neo that is a colour token, not a font size, and it
-   would repaint the heading in the base colour instead of the alert one. */
-.form-error-summary__title {
-  @apply mb-2 font-semibold;
-}
-
-.form-error-summary__list a {
-  @apply underline;
-}
-
 /* With instant quantities the update button is pressed for the shopper, so
    it is hidden -- but only visually, and only once the script is running.
    It stays in the form for keyboard and assistive tech users, shows when it

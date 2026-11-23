@@ -46,7 +46,7 @@ class CommerceSettings extends SettingsBase {
    * submitted values with the stored ones and would drop that new key, so the
    * whole map is taken as submitted.
    */
-  protected $strictParents = [['cart_copy_types']];
+  protected $strictParents = [['cart_copy_types'], ['checkout_copy_types']];
 
   /**
    * {@inheritdoc}
@@ -144,6 +144,7 @@ class CommerceSettings extends SettingsBase {
     ];
 
     $this->buildCartPageForm($form, $parents, $group);
+    $this->buildCheckoutForm($form, $parents, $group);
 
     $form['cart_block'] = [
       '#type' => 'details',
@@ -430,6 +431,99 @@ class CommerceSettings extends SettingsBase {
         '#description' => $this->t('Leave a field empty to use the cart copy above.'),
       ];
     }
+  }
+
+  /**
+   * Builds the checkout tab.
+   *
+   * @param array $form
+   *   The settings form.
+   * @param array $parents
+   *   The shared form parents.
+   * @param string $group
+   *   The vertical tabs group.
+   */
+  protected function buildCheckoutForm(array &$form, array $parents, string $group): void {
+    $form['checkout'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Checkout'),
+      '#description' => $this->t("For order types whose checkout flow uses the <em>Single page (Neo)</em> plugin. Section headings are the panes' display labels, set in the checkout flow."),
+      '#group' => $group,
+      '#parents' => $parents,
+    ];
+    $page = &$form['checkout'];
+
+    $page['checkout_page_component'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Checkout page component'),
+      '#description' => $this->t('Lays out the single-page checkout, as <em>provider:name</em>. The theme copy takes over automatically once it is ejected.'),
+      '#default_value' => $this->getValue('checkout_page_component'),
+      '#required' => TRUE,
+    ];
+    $page['checkout_copy'] = $this->checkoutCopyElements(
+      (array) $this->getValue('checkout_copy'),
+      array_merge($parents, ['checkout_copy'])
+    ) + [
+      '#type' => 'details',
+      '#title' => $this->t('Checkout copy'),
+      '#description' => $this->t('Used by every order type unless it says otherwise below.'),
+      '#open' => TRUE,
+    ];
+
+    $types = (array) $this->getValue('checkout_copy_types');
+    $orderTypes = \Drupal::entityTypeManager()
+      ->getStorage('commerce_order_type')
+      ->loadMultiple();
+    foreach ($orderTypes as $id => $orderType) {
+      $page['checkout_copy_types'][$id] = $this->checkoutCopyElements(
+        (array) ($types[$id] ?? []),
+        array_merge($parents, ['checkout_copy_types', $id])
+      ) + [
+        '#type' => 'details',
+        '#title' => $this->t('Order type: @label', [
+          '@label' => $orderType->label(),
+        ]),
+        '#description' => $this->t('Leave a field empty to use the checkout copy above.'),
+      ];
+    }
+  }
+
+  /**
+   * Builds the fields for one set of checkout copy.
+   *
+   * @param array $values
+   *   The stored values.
+   * @param array $parents
+   *   The parents the values are stored under.
+   *
+   * @return array
+   *   The elements.
+   */
+  protected function checkoutCopyElements(array $values, array $parents): array {
+    $titles = [
+      'kicker' => $this->t('Kicker'),
+      'title' => $this->t('Title'),
+      'intro' => $this->t('Intro'),
+      'summary_title' => $this->t('Order summary heading'),
+      'summary_toggle_label' => $this->t('Order summary toggle'),
+      'place_order_label' => $this->t('Place order label'),
+      'secure_note' => $this->t('Note under Place order'),
+    ];
+    $descriptions = [
+      'summary_toggle_label' => $this->t('The bar that opens the summary on phones, followed by the total.'),
+      'secure_note' => $this->t('Such as "Encrypted &amp; secure". Leave empty for none.'),
+    ];
+    $elements = [];
+    foreach ($titles as $key => $title) {
+      $elements[$key] = [
+        '#type' => 'textfield',
+        '#title' => $title,
+        '#description' => $descriptions[$key] ?? NULL,
+        '#parents' => array_merge($parents, [$key]),
+        '#default_value' => $values[$key] ?? '',
+      ];
+    }
+    return $elements;
   }
 
   /**

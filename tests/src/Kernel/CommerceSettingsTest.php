@@ -113,6 +113,9 @@ class CommerceSettingsTest extends CartKernelTestBase {
       'cart_copy',
       'cart_copy_types',
       'cart_overview',
+      'checkout_page_component',
+      'checkout_copy',
+      'checkout_copy_types',
     ];
     sort($expected);
     $actual = array_keys($config);

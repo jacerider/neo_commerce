@@ -35,6 +35,7 @@ class InstallHooks {
     'cart_page_component' => 'neo_commerce:cart_page',
     'cart_line_component' => 'neo_commerce:cart_line',
     'cart_overview_component' => 'neo_commerce:cart_overview',
+    'checkout_page_component' => 'neo_commerce:checkout_page',
   ];
 
   /**
@@ -73,7 +74,7 @@ class InstallHooks {
   }
 
   /**
-   * Repoints the cart page components at the theme's own copies.
+   * Repoints the cart and checkout page components at the theme's copies.
    *
    * Public for neo_commerce_update_10003(), which hands the components to
    * sites that installed the module before they existed.

@@ -154,6 +154,18 @@ neo_commerce:
       sequence:
         type: neo_commerce.cart_copy
         label: 'Copy for one order type'
+    checkout_page_component:
+      type: string
+      label: 'Checkout page component'
+    checkout_copy:
+      type: neo_commerce.checkout_copy
+      label: 'Single-page checkout copy, used for every order type'
+    checkout_copy_types:
+      type: sequence
+      label: 'Single-page checkout copy per order type'
+      sequence:
+        type: neo_commerce.checkout_copy
+        label: 'Copy for one order type'
     cart_overview:
       type: mapping
       label: 'Cart overview copy'
@@ -236,6 +248,35 @@ neo_commerce.cart_copy:
 # The block carries nothing but the variation. Everything else it renders --
 # label, icon, dropdown, empty behaviour -- lives in neo_commerce.settings, so
 # an ajax refresh can rebuild the block from the variation id alone.
+# The words the single-page checkout prints. `checkout_copy` holds the
+# defaults; a `checkout_copy_types` entry holds one order type's overrides,
+# and an empty value there means "use the default".
+neo_commerce.checkout_copy:
+  type: mapping
+  label: 'Checkout copy'
+  mapping:
+    kicker:
+      type: label
+      label: 'Kicker'
+    title:
+      type: label
+      label: 'Title'
+    intro:
+      type: label
+      label: 'Intro'
+    summary_title:
+      type: label
+      label: 'Order summary heading'
+    summary_toggle_label:
+      type: label
+      label: 'Order summary toggle label'
+    place_order_label:
+      type: label
+      label: 'Place order label'
+    secure_note:
+      type: label
+      label: 'Note under Place order'
+
 block.settings.neo_commerce_cart:
   type: block_settings
   label: 'Neo cart block settings'

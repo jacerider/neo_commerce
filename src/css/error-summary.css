@@ -1,0 +1,32 @@
+/**
+ * @file
+ * The error summary the add to cart form and the single-page checkout fill
+ * over ajax.
+ */
+
+.form-error-summary {
+  @apply mb-4 border border-alert-500 p-4 text-alert-500;
+}
+
+/* After the block above, not before it: :has() takes the specificity of its
+   argument, so :not(:has(*)) adds nothing and only source order decides which
+   of the two rules wins. :empty would have outranked it; this does not. */
+.form-error-summary:not(:has(*)) {
+  @apply hidden;
+}
+
+/* The summary is focused programmatically after a failed submit, so it needs
+   a visible focus ring even though it is not otherwise interactive. */
+.form-error-summary:focus-visible {
+  @apply outline-2 outline-offset-2 outline-alert-500;
+}
+
+/* No text-base here: in Neo that is a colour token, not a font size, and it
+   would repaint the heading in the base colour instead of the alert one. */
+.form-error-summary__title {
+  @apply mb-2 font-semibold;
+}
+
+.form-error-summary__list a {
+  @apply underline;
+}

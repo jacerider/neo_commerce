@@ -9,6 +9,7 @@ use Drupal\commerce_checkout\Plugin\Commerce\CheckoutFlow\CheckoutFlowWithPanesB
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\neo_commerce\Checkout\CheckoutPage;
 use Drupal\neo_commerce\Checkout\CheckoutResponseBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -60,6 +61,13 @@ class SinglePage extends CheckoutFlowWithPanesBase {
   protected CheckoutResponseBuilder $responseBuilder;
 
   /**
+   * The checkout page layout.
+   *
+   * @var \Drupal\neo_commerce\Checkout\CheckoutPage
+   */
+  protected CheckoutPage $page;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(
@@ -77,6 +85,7 @@ class SinglePage extends CheckoutFlowWithPanesBase {
     $instance->responseBuilder = $container->get(
       'neo_commerce.checkout_response'
     );
+    $instance->page = $container->get('neo_commerce.checkout_page');
     return $instance;
   }
 
@@ -201,6 +210,11 @@ class SinglePage extends CheckoutFlowWithPanesBase {
     ];
 
     $this->responseBuilder->adoptStripe($form, $this->getOrder());
+    $this->page->decorate(
+      $form,
+      $this->getOrder(),
+      array_keys($this->getVisiblePanes(self::STEP))
+    );
     return $form;
   }
 

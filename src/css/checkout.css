@@ -1,0 +1,24 @@
+/**
+ * @file
+ * Structural styling for the single-page checkout.
+ *
+ * Thin on purpose: the checkout_page component is the theme's to style.
+ */
+
+/* Without the script the toggle stays hidden and the summary open. Tailwind's
+   display utilities would otherwise beat the hidden attribute. */
+[data-neo-checkout-summary-toggle][hidden] {
+  display: none !important;
+}
+
+/* Folded on phones once the script has run. */
+@media (max-width: 1023.98px) {
+  [data-neo-checkout-summary][data-collapsed] {
+    display: none;
+  }
+}
+
+/* While Place order is being saved and confirmed. */
+[data-neo-checkout][aria-busy='true'] [data-neo-checkout-place] {
+  @apply opacity-60 pointer-events-none;
+}

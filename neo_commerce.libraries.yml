@@ -8,6 +8,7 @@ cart:
   js:
     src/js/cart.ts: {}
   dependencies:
+    - neo_commerce/error_summary
     - core/drupal
     - core/drupalSettings
     - core/drupal.ajax
@@ -24,13 +25,25 @@ variation:
     - core/drupalSettings
     - core/drupal.ajax
 
+error_summary:
+  version: VERSION
+  neo:
+    scope: front
+  css:
+    component:
+      src/css/error-summary.css: {}
+
 checkout:
   version: VERSION
   neo:
     scope: front
+  css:
+    component:
+      src/css/checkout.css: {}
   js:
     src/js/checkout.ts: {}
   dependencies:
+    - neo_commerce/error_summary
     - core/drupal
     - core/drupalSettings
     - core/drupal.ajax

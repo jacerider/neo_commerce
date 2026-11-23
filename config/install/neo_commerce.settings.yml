@@ -56,6 +56,16 @@ cart_copy:
   empty_cta_label: 'Continue shopping'
   empty_cta_url: ''
 cart_copy_types: {  }
+checkout_page_component: 'neo_commerce:checkout_page'
+checkout_copy:
+  kicker: ''
+  title: 'Checkout'
+  intro: ''
+  summary_title: 'Order Summary'
+  summary_toggle_label: 'Show order summary'
+  place_order_label: 'Place order'
+  secure_note: 'Encrypted & secure'
+checkout_copy_types: {  }
 cart_overview:
   kicker: ''
   title: 'Your cart'

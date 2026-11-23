@@ -103,4 +103,36 @@ const save = (form: HTMLFormElement): Promise<SaveResult> => {
 
   (Drupal as unknown as Record<string, unknown>).neoCommerceCheckout = { save };
 
+  /**
+   * Folds the order summary into a bar on phones.
+   *
+   * The markup ships open with the toggle hidden, so the summary is there
+   * without script. Folding only matters on narrow screens; the stylesheet
+   * ignores `data-collapsed` from the large breakpoint up.
+   */
+  const attachSummaryToggle = (toggle: HTMLButtonElement): void => {
+    const summary = document.getElementById(
+      toggle.getAttribute('aria-controls') || '',
+    );
+    if (!summary) {
+      return;
+    }
+    const set = (open: boolean): void => {
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      summary.toggleAttribute('data-collapsed', !open);
+    };
+    toggle.hidden = false;
+    set(false);
+    toggle.addEventListener('click', () => {
+      set(toggle.getAttribute('aria-expanded') !== 'true');
+    });
+  };
+
+  Drupal.behaviors.neoCommerceCheckout = {
+    attach: (context: HTMLElement) => {
+      once('neo-checkout-summary', '[data-neo-checkout-summary-toggle]', context)
+        .forEach((toggle) => attachSummaryToggle(toggle as HTMLButtonElement));
+    },
+  };
+
 })(Drupal);

@@ -1,0 +1,77 @@
+{#
+  Checkout | Page: the single-page checkout.
+
+  Rendered by neo_commerce in place of Commerce's checkout form template, so
+  everything here sits INSIDE the checkout form. Every slot holds checkout
+  panes or form elements: print each slot you are given, once.
+
+  - `errors` is where a failed save or Place order writes its summary. Keep
+    it at the top of the form column.
+  - `actions` holds Place order and the hidden save button the page script
+    uses. Leave either out and the page cannot be submitted.
+  - A pane replaced over ajax keeps its wrapper id, so it lands back inside
+    whatever markup you wrap the slot in.
+
+  The summary comes first in the markup so it sits at the top on phones,
+  where it folds into a bar (`data-neo-checkout-summary-toggle`, opened and
+  closed by the module's script; without script it simply stays open). On
+  wide screens it moves to the right column and sticks.
+
+  Own this file: it is copied into your theme on install and yours to restyle
+  from there. Run `drush cr` after editing.
+#}
+<div{{ attributes.addClass(['checkout-page']) }}>
+  {% if kicker or title or intro %}
+    <header class="checkout-page__head mb-8 text-center">
+      {% if kicker %}
+        <p class="checkout-page__kicker mb-3 text-xs font-semibold uppercase tracking-widest text-accent">{{ kicker }}</p>
+      {% endif %}
+      {% if title %}
+        {% set tag = title_tag ?: 'h1' %}
+        <{{ tag }} class="checkout-page__title text-4xl">{{ title }}</{{ tag }}>
+      {% endif %}
+      {% if intro %}
+        <p class="checkout-page__intro mt-2 italic opacity-70">{{ intro }}</p>
+      {% endif %}
+    </header>
+  {% endif %}
+
+  <div class="checkout-page__layout grid items-start gap-8 lg:grid-cols-[1.35fr_0.65fr]">
+    <aside class="checkout-page__aside lg:order-2 lg:sticky lg:top-24">
+      <button type="button" class="checkout-page__summary-toggle flex w-full items-center justify-between gap-4 border p-4 lg:hidden" data-neo-checkout-summary-toggle aria-expanded="true" aria-controls="neo-checkout-summary" hidden>
+        <span class="text-xs font-semibold uppercase tracking-widest">{{ summary_toggle_label ?: 'Show order summary'|t }}</span>
+        {% if total %}
+          <span class="checkout-page__summary-total font-semibold" data-neo-checkout-total>{{ total }}</span>
+        {% endif %}
+      </button>
+      <div id="neo-checkout-summary" class="checkout-page__summary border p-4 sm:p-6" data-neo-checkout-summary>
+        {% if summary_title %}
+          <h2 class="mb-5 text-2xl">{{ summary_title }}</h2>
+        {% endif %}
+        {{ summary }}
+      </div>
+    </aside>
+
+    <div class="checkout-page__main flex flex-col gap-6 lg:order-1">
+      {{ errors }}
+      {% if details %}
+        <section class="checkout-page__section checkout-page__section--details">{{ details }}</section>
+      {% endif %}
+      {% if shipping %}
+        <section class="checkout-page__section checkout-page__section--shipping">{{ shipping }}</section>
+      {% endif %}
+      {% if payment %}
+        <section class="checkout-page__section checkout-page__section--payment">{{ payment }}</section>
+      {% endif %}
+      {% if extra %}
+        <section class="checkout-page__section checkout-page__section--extra">{{ extra }}</section>
+      {% endif %}
+      <div class="checkout-page__actions">
+        {{ actions }}
+        {% if secure_note %}
+          <p class="checkout-page__secure mt-3 text-xs uppercase tracking-widest opacity-70">{{ secure_note }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
