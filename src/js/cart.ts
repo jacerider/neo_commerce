@@ -1,4 +1,5 @@
 import installCartGuard from './cart/guard';
+import installCartInstant, { attachCartInstant } from './cart/instant';
 import installCartReport from './cart/report';
 
 /**
@@ -8,16 +9,19 @@ import installCartReport from './cart/report';
 
 (function (Drupal) {
 
-  // Both wrap Drupal.Ajax.prototype, and both are installed once, at load,
-  // not per attach -- see guard.ts.
+  // The guard and the report wrap Drupal.Ajax.prototype, and the instant
+  // quantity listeners are delegated from the document. All three are
+  // installed once, at load, not per attach -- see guard.ts.
   installCartGuard();
   installCartReport();
+  installCartInstant();
 
   Drupal.behaviors.neoCommerceCart = {
-    attach: () => {
-      // The wrappers above are the only behaviour so far, and they live on
-      // the ajax prototype rather than on elements. This stays so the library
-      // has a named behaviour to hang future per-element work from.
+    attach: (context: HTMLElement) => {
+      // A cart form arriving, on page load or as an update's response, picks
+      // up any change made while that update was in flight.
+      once('neo-cart-instant', 'form[data-neo-cart-instant]', context)
+        .forEach((form) => attachCartInstant(form as HTMLFormElement));
     },
   };
 

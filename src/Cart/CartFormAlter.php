@@ -100,6 +100,7 @@ class CartFormAlter {
     }
 
     $this->addDialogMessages($form);
+    $this->markInstantQuantities($form, $settings, $orderId);
     $this->alterQuantities($form, $settings);
     $this->alterRemoveButtons($form, $formState, $settings, $wrapperId, $ajax);
     /** @var \Drupal\commerce_order\Entity\OrderInterface|null $order */
@@ -224,6 +225,40 @@ class CartFormAlter {
     $form['messages']['#type'] ??= 'container';
     $form['messages']['#weight'] ??= -1000;
     $form['messages']['status'] = ['#type' => 'status_messages'];
+  }
+
+  /**
+   * Marks the form for the script that applies quantity changes as made.
+   *
+   * The script finds everything by these markers rather than by Commerce's
+   * element names, which a site's copy of the cart view may change.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\neo_settings\Plugin\SettingsInterface $settings
+   *   The active settings.
+   * @param string $orderId
+   *   The cart's order id.
+   */
+  protected function markInstantQuantities(array &$form, $settings, string $orderId): void {
+    if (!$settings->getValue('cart_quantity_instant')
+      || empty($form['edit_quantity'])
+      || !isset($form['actions']['submit'])) {
+      return;
+    }
+    $form['#attributes']['data-neo-cart-instant'] = 'true';
+    // A key that survives the update: the form's id and selector both gain a
+    // random suffix in an ajax response.
+    $form['#attributes']['data-neo-cart-order'] = $orderId;
+    $form['#attached']['library'][] = 'neo_commerce/cart';
+    $form['actions']['submit']['#attributes']['class'][] = 'neo-commerce-cart-update';
+    // Core refocuses the triggering element after an ajax response. Here
+    // that is the hidden update button, which would then show; the script
+    // returns focus to the quantity control the shopper used instead.
+    $form['actions']['submit']['#attributes']['data-disable-refocus'] = 'true';
+    foreach (Element::children($form['edit_quantity']) as $delta) {
+      $form['edit_quantity'][$delta]['#attributes']['class'][] = 'neo-commerce-cart-quantity';
+    }
   }
 
   /**

@@ -68,3 +68,11 @@
 .form-error-summary__list a {
   @apply underline;
 }
+
+/* With instant quantities the update button is pressed for the shopper, so
+   it is hidden -- but only visually, and only once the script is running.
+   It stays in the form for keyboard and assistive tech users, shows when it
+   takes focus, and is the visible fallback when JavaScript is off. */
+html.js form[data-neo-cart-instant] .neo-commerce-cart-update:not(:focus) {
+  @apply sr-only;
+}
