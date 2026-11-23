@@ -6,6 +6,7 @@ namespace Drupal\neo_commerce\Plugin\Commerce\CheckoutFlow;
 
 use Drupal\commerce_checkout\Attribute\CommerceCheckoutFlow;
 use Drupal\commerce_checkout\Plugin\Commerce\CheckoutFlow\CheckoutFlowWithPanesBase;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -154,9 +155,14 @@ class SinglePage extends CheckoutFlowWithPanesBase {
     $step_id = NULL,
   ) {
     if ($step_id === self::STEP) {
-      $this->responseBuilder->preselectPaymentGateway(
+      $requested = NestedArray::getValue(
+        $form_state->getUserInput(),
+        ['payment_information', 'payment_method']
+      );
+      $this->responseBuilder->syncPaymentOption(
         $this->getOrder(),
-        $this->getPane('payment_information')
+        $this->getPane('payment_information'),
+        is_string($requested) ? $requested : NULL
       );
     }
 
@@ -172,6 +178,26 @@ class SinglePage extends CheckoutFlowWithPanesBase {
     $form['#attributes']['novalidate'] = 'novalidate';
     $form['#attached']['library'][] = 'neo_commerce/checkout';
 
+    // Where a pane's ajax writes its messages (an invalid coupon, say).
+    $form['neo_messages'] = [
+      '#type' => 'container',
+      '#weight' => -1001,
+      '#attributes' => [
+        'id' => 'neo-checkout-messages',
+        'aria-live' => 'polite',
+      ],
+    ];
+    // Says the new total out loud when a change on the page updates it.
+    $form['neo_total_live'] = [
+      '#type' => 'container',
+      '#weight' => -1002,
+      '#attributes' => [
+        'id' => 'neo-checkout-total-live',
+        'class' => ['visually-hidden'],
+        'aria-live' => 'polite',
+        'aria-atomic' => 'true',
+      ],
+    ];
     // Reserved up front so the save response has somewhere to write into,
     // as the add to cart form does.
     $form['neo_error_summary'] = [

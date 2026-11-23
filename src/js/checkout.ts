@@ -128,8 +128,42 @@ const save = (form: HTMLFormElement): Promise<SaveResult> => {
     });
   };
 
+  /**
+   * Puts focus back after a pane is redrawn.
+   *
+   * A coupon, a shipping rate or an address change redraws the pane it sits
+   * in, and the control the shopper was using goes with it. The last focused
+   * control is remembered by name, and found again in the new markup when
+   * focus has fallen back to the page.
+   */
+  let lastFocused: { name: string; value: string } | null = null;
+  document.addEventListener('focusin', (event) => {
+    const target = event.target as HTMLInputElement | null;
+    if (target?.name && target.closest('form[data-neo-checkout]')) {
+      lastFocused = { name: target.name, value: target.value };
+    }
+  });
+  const restoreFocus = (context: HTMLElement): void => {
+    const active = document.activeElement;
+    if (!lastFocused || (active && active !== document.body)) {
+      return;
+    }
+    const candidates = Array.from(
+      context.querySelectorAll<HTMLInputElement>(
+        `[name="${CSS.escape(lastFocused.name)}"]`,
+      ),
+    );
+    const target = candidates.find((element) => element.type === 'radio'
+      ? element.checked
+      : true);
+    target?.focus();
+  };
+
   Drupal.behaviors.neoCommerceCheckout = {
     attach: (context: HTMLElement) => {
+      if (context !== document as unknown as HTMLElement) {
+        restoreFocus(context);
+      }
       once('neo-checkout-summary', '[data-neo-checkout-summary-toggle]', context)
         .forEach((toggle) => attachSummaryToggle(toggle as HTMLButtonElement));
     },

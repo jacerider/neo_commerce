@@ -58,7 +58,15 @@ services:
       - '@entity_type.manager'
       - '@messenger'
       - '@string_translation'
+      - '@neo_commerce.checkout_page'
       - '@?commerce_payment.options_builder'
+
+  neo_commerce.checkout_ajax_response:
+    class: Drupal\neo_commerce\Checkout\CheckoutAjaxResponseBuilder
+    decorates: form_ajax_response_builder
+    arguments:
+      - '@neo_commerce.checkout_ajax_response.inner'
+      - '@neo_commerce.checkout_response'
 
   neo_commerce.checkout_copy:
     class: Drupal\neo_commerce\Checkout\CheckoutCopy

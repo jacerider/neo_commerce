@@ -10,12 +10,18 @@ use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_product\Entity\ProductVariationType;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Form\FormAjaxResponseBuilderInterface;
+use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormState;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RenderContext;
+use Drupal\neo_commerce\Checkout\CheckoutAjaxResponseBuilder;
 use Drupal\neo_commerce\Checkout\CheckoutPage;
 use Drupal\neo_commerce\Plugin\Commerce\CheckoutFlow\SinglePage;
 use Drupal\Tests\commerce_cart\Kernel\CartKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Tests the neo_single_page checkout flow.
@@ -150,7 +156,7 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
     $plugin = $this->plugin();
     $builder = $this->container->get('neo_commerce.checkout_response');
 
-    $this->assertTrue($builder->preselectPaymentGateway(
+    $this->assertTrue($builder->syncPaymentOption(
       $this->cart,
       $plugin->getPane('payment_information')
     ));
@@ -160,7 +166,7 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
     );
 
     // Never overrides a gateway already chosen.
-    $this->assertFalse($builder->preselectPaymentGateway(
+    $this->assertFalse($builder->syncPaymentOption(
       $this->cart,
       $plugin->getPane('payment_information')
     ));
@@ -345,6 +351,140 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
     $this->assertSame(['actions'], array_keys($slots['actions']));
     $this->assertSame(['neo_error_summary'], array_keys($slots['errors']));
     $this->assertArrayNotHasKey('contact_information', $form);
+  }
+
+  /**
+   * The payment option picked on the page is stored before the panes build.
+   */
+  public function testPickedPaymentOptionIsStored(): void {
+    PaymentGateway::create([
+      'id' => 'cheque',
+      'label' => 'Cheque',
+      'plugin' => 'manual',
+      'configuration' => ['collect_billing_information' => FALSE],
+    ])->save();
+    $builder = $this->container->get('neo_commerce.checkout_response');
+    $pane = $this->plugin()->getPane('payment_information');
+
+    $builder->syncPaymentOption($this->cart, $pane);
+    $first = $this->reload()->get('payment_gateway')->target_id;
+    $other = $first === 'manual' ? 'cheque' : 'manual';
+
+    $this->assertTrue($builder->syncPaymentOption($this->cart, $pane, $other));
+    $this->assertSame($other, $this->reload()->get('payment_gateway')->target_id);
+    // An option the order cannot use is ignored.
+    $this->assertFalse(
+      $builder->syncPaymentOption($this->cart, $pane, 'nope')
+    );
+  }
+
+  /**
+   * A pane's own ajax redraws panes one by one and leaves the iframe alone.
+   */
+  public function testRefreshKeepsTheGatewayPane(): void {
+    $builder = $this->container->get('neo_commerce.checkout_response');
+    $form = [
+      'contact_information' => ['#id' => 'edit-contact-information'],
+      'stripe_review' => ['#id' => 'edit-stripe-review'],
+      'sidebar' => [
+        'coupon_redemption' => ['#id' => 'edit-coupon-redemption'],
+      ],
+    ];
+    $formState = new FormState();
+    $formState->setTriggeringElement([
+      '#array_parents' => ['sidebar', 'coupon_redemption', 'form', 'apply'],
+    ]);
+    $paneIds = ['contact_information', 'stripe_review'];
+
+    $commands = $this->inContext(fn () => $builder->refreshResponse(
+      $form,
+      $formState,
+      $this->cart,
+      $paneIds
+    ))->getCommands();
+    $selectors = array_column($commands, 'selector');
+    $this->assertContains('#edit-contact-information', $selectors);
+    $this->assertContains('#edit-coupon-redemption', $selectors);
+    $this->assertContains('[data-neo-checkout-total]', $selectors);
+    $this->assertContains('#neo-checkout-total-live', $selectors);
+    $this->assertNotContains('#edit-stripe-review', $selectors);
+
+    // A change of payment option redraws the gateway pane as well.
+    $commands = $this->inContext(fn () => $builder->refreshResponse(
+      $form,
+      $formState,
+      $this->cart,
+      $paneIds,
+      TRUE
+    ))->getCommands();
+    $this->assertContains(
+      '#edit-stripe-review',
+      array_column($commands, 'selector')
+    );
+  }
+
+  /**
+   * Only this flow's whole-form refreshes are narrowed; the rest go to core.
+   */
+  public function testAjaxDecoratorScope(): void {
+    $this->assertInstanceOf(
+      CheckoutAjaxResponseBuilder::class,
+      $this->container->get('form_ajax_response_builder')
+    );
+    $inner = $this->createMock(FormAjaxResponseBuilderInterface::class);
+    $inner->expects($this->once())
+      ->method('buildResponse')
+      ->willReturn(new AjaxResponse());
+    $decorator = new CheckoutAjaxResponseBuilder(
+      $inner,
+      $this->container->get('neo_commerce.checkout_response')
+    );
+    $request = new Request();
+    $refresh = [
+      '#ajax' => ['callback' => ['Some\\Pane', 'ajaxRefreshForm']],
+      '#array_parents' => ['contact_information', 'email'],
+    ];
+
+    // Another form object: core answers.
+    $formState = (new FormState())->setTriggeringElement($refresh);
+    $formState->setFormObject(new class extends FormBase {
+
+      /**
+       * {@inheritdoc}
+       */
+      public function getFormId() {
+        return 'other';
+      }
+
+      /**
+       * {@inheritdoc}
+       */
+      public function buildForm(array $form, FormStateInterface $form_state) {
+        return $form;
+      }
+
+      /**
+       * {@inheritdoc}
+       */
+      public function submitForm(array &$form, FormStateInterface $form_state) {}
+
+    });
+    $decorator->buildResponse($request, [], $formState, []);
+
+    // This flow: narrowed, never reaching core (the mock expects one call).
+    $formState = (new FormState())->setTriggeringElement($refresh);
+    $formState->setFormObject($this->plugin());
+    $form = [
+      '#step_id' => SinglePage::STEP,
+      'contact_information' => ['#id' => 'edit-contact-information'],
+    ];
+    $response = $this->inContext(
+      fn () => $decorator->buildResponse($request, $form, $formState, [])
+    );
+    $this->assertContains(
+      '#edit-contact-information',
+      array_column($response->getCommands(), 'selector')
+    );
   }
 
   /**

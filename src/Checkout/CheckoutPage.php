@@ -72,13 +72,7 @@ class CheckoutPage implements TrustedCallbackInterface {
       $form['actions']['next']['#value'] = $copy['place_order_label'];
     }
 
-    $price = $order->getTotalPrice();
-    $total = $price
-      ? $this->currencyFormatter->format(
-        $price->getNumber(),
-        $price->getCurrencyCode()
-      )
-      : '';
+    $total = $this->total($order);
     $form['#neo_checkout_page'] = [
       'component' => (string) $this->settings->getActive()
         ->getValue('checkout_page_component'),
@@ -95,6 +89,25 @@ class CheckoutPage implements TrustedCallbackInterface {
       ],
     ];
     $form['#pre_render'][] = [static::class, 'preRender'];
+  }
+
+  /**
+   * Returns the order total, formatted.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
+   *
+   * @return string
+   *   The total, or '' when the order has none yet.
+   */
+  public function total(OrderInterface $order): string {
+    $price = $order->getTotalPrice();
+    return $price
+      ? $this->currencyFormatter->format(
+        $price->getNumber(),
+        $price->getCurrencyCode()
+      )
+      : '';
   }
 
   /**
@@ -121,6 +134,8 @@ class CheckoutPage implements TrustedCallbackInterface {
       unset($element[$paneId]);
     }
     $moves = [
+      'neo_total_live' => 'errors',
+      'neo_messages' => 'errors',
       'neo_error_summary' => 'errors',
       'sidebar' => 'summary',
       'actions' => 'actions',

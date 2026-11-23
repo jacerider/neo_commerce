@@ -49,19 +49,97 @@ const showError = (message: string): void => {
   }
 };
 
-const mount = (element: HTMLElement, settings: StripeSettings): void => {
-  const form = element.closest('form');
-  if (!form) {
-    return;
-  }
-  const place = form.querySelector<HTMLButtonElement | HTMLInputElement>(
+type Mounted = {
+  stripe: any;
+  elements: any;
+  settings: StripeSettings;
+  balance: string;
+};
+
+/**
+ * What is mounted in each checkout form right now.
+ *
+ * Changing the payment option redraws the gateway pane with new settings (a
+ * new intent, a new element id), so the mount is replaced while the form and
+ * its one submit listener stay.
+ */
+const mounted = new WeakMap<HTMLFormElement, Mounted>();
+const busy = new WeakSet<HTMLFormElement>();
+
+const placeButton = (form: HTMLFormElement) =>
+  form.querySelector<HTMLButtonElement | HTMLInputElement>(
     '[data-neo-checkout-place]',
   );
-  if (!place) {
+
+const onSubmit = async (event: SubmitEvent): Promise<void> => {
+  const form = event.currentTarget as HTMLFormElement;
+  const place = placeButton(form);
+  const current = mounted.get(form);
+  if (!place || !current || event.submitter !== place) {
     return;
   }
+  event.preventDefault();
+  if (busy.has(form)) {
+    return;
+  }
+  busy.add(form);
+  place.disabled = true;
+  form.setAttribute('aria-busy', 'true');
+
+  const fail = (message?: string): void => {
+    if (message) {
+      showError(message);
+    }
+    busy.delete(form);
+    place.disabled = false;
+    form.removeAttribute('aria-busy');
+  };
+
   const api = (Drupal as unknown as { neoCommerceCheckout: CheckoutApi })
     .neoCommerceCheckout;
+  const { stripe, elements, settings } = current;
+  try {
+    // Both checks run even when the first fails, so the shopper sees
+    // every problem on the page at once, card and fields together.
+    const checked = elements ? await elements.submit() : {};
+    const saved = await api.save(form);
+    if (checked.error || !saved.valid) {
+      fail(checked.error?.message);
+      return;
+    }
+    if (elements && saved.balance !== current.balance) {
+      await elements.fetchUpdates();
+      current.balance = saved.balance;
+    }
+
+    const confirm = settings.intentType === 'setup'
+      ? stripe.confirmSetup
+      : stripe.confirmPayment;
+    const confirmParams = { return_url: settings.returnUrl };
+    const result = await confirm.call(stripe, elements
+      ? { elements, confirmParams, redirect: 'always' }
+      : {
+        clientSecret: settings.clientSecret,
+        confirmParams,
+        redirect: 'always',
+      });
+    if (result.error) {
+      fail(result.error.message);
+    }
+    // On success Stripe is already navigating away. The button stays
+    // disabled so nothing can be sent twice.
+  }
+  catch (error) {
+    fail((error as Error).message);
+  }
+};
+
+const mount = (element: HTMLElement, settings: StripeSettings): void => {
+  const form = element.closest('form');
+  const place = form ? placeButton(form) : null;
+  if (!form || !place) {
+    return;
+  }
   const stripe = Stripe(settings.publishableKey, {
     apiVersion: settings.apiVersion,
   });
@@ -84,64 +162,14 @@ const mount = (element: HTMLElement, settings: StripeSettings): void => {
     enable();
   }
 
-  let balance = settings.balance ?? '';
-  let busy = false;
-
-  form.addEventListener('submit', async (event: SubmitEvent) => {
-    if (event.submitter !== place) {
-      return;
-    }
-    event.preventDefault();
-    if (busy) {
-      return;
-    }
-    busy = true;
-    place.disabled = true;
-    form.setAttribute('aria-busy', 'true');
-
-    const fail = (message?: string): void => {
-      if (message) {
-        showError(message);
-      }
-      busy = false;
-      place.disabled = false;
-      form.removeAttribute('aria-busy');
-    };
-
-    try {
-      // Both checks run even when the first fails, so the shopper sees
-      // every problem on the page at once, card and fields together.
-      const checked = elements ? await elements.submit() : {};
-      const saved = await api.save(form);
-      if (checked.error || !saved.valid) {
-        fail(checked.error?.message);
-        return;
-      }
-      if (elements && saved.balance !== balance) {
-        await elements.fetchUpdates();
-        balance = saved.balance;
-      }
-
-      const confirm = settings.intentType === 'setup'
-        ? stripe.confirmSetup
-        : stripe.confirmPayment;
-      const confirmParams = { return_url: settings.returnUrl };
-      const result = await confirm.call(stripe, elements
-        ? { elements, confirmParams, redirect: 'always' }
-        : {
-          clientSecret: settings.clientSecret,
-          confirmParams,
-          redirect: 'always',
-        });
-      if (result.error) {
-        fail(result.error.message);
-      }
-      // On success Stripe is already navigating away. The button stays
-      // disabled so nothing can be sent twice.
-    }
-    catch (error) {
-      fail((error as Error).message);
-    }
+  if (!mounted.has(form)) {
+    form.addEventListener('submit', onSubmit);
+  }
+  mounted.set(form, {
+    stripe,
+    elements,
+    settings,
+    balance: settings.balance ?? '',
   });
 };
 
