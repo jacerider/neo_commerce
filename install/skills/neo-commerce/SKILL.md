@@ -61,6 +61,15 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
   `data-disable-refocus`). The script presses the update button through
   its Drupal.ajax instance, one request at a time, and re-sends changes made
   mid-request once the new form attaches.
+- **Simple page layout** (`simple_layout_cart`, `simple_layout_checkout`,
+  both off by default; `src/Cart/SimpleLayout.php`, `src/Hook/PageHooks.php`):
+  adds the `page__simple` + `page__simple__cart` / `page__simple__checkout`
+  suggestions on the cart routes / `commerce_checkout.form`, and sets
+  `simple_layout`, `simple_back_label`, `simple_back_url` for neo_base's
+  `page--simple.html.twig` (logo + back link bar, no site header or footer).
+  Back link: the order type's continue-shopping copy on cart pages and the
+  checkout `complete` step; "Back to cart" to `/cart/{order}` on other
+  checkout steps. neo_base adds the logo when `simple_layout` is set.
 - **[src/Ajax/CartResponseBuilder.php](web/modules/contrib/neo_commerce/src/Ajax/CartResponseBuilder.php)** —
   both responses. Error path: ARIA wiring, summary, focus, messenger flush.
   Success path: cart refresh, then the modal.

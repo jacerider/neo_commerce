@@ -371,6 +371,18 @@ class CommerceSettings extends SettingsBase {
       '#min' => 1,
       '#default_value' => $this->getValue('cart_overview_thumbnail_limit'),
     ];
+    $page['simple_layout_cart'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Simple page layout on cart pages'),
+      '#description' => $this->t('Replace the site header and footer on /cart with a bar holding the logo and a continue shopping link. Needs a theme with page--simple.html.twig (neo_base has one).'),
+      '#default_value' => $this->getValue('simple_layout_cart'),
+    ];
+    $page['simple_layout_checkout'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Simple page layout during checkout'),
+      '#description' => $this->t('The same bar on every checkout step, linking back to the cart (and on to shopping once the order is placed).'),
+      '#default_value' => $this->getValue('simple_layout_checkout'),
+    ];
     $page['cart_explainer'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Explainer'),

@@ -135,6 +135,20 @@ services:
   Drupal\neo_commerce\Hook\ThemeHooks:
     class: Drupal\neo_commerce\Hook\ThemeHooks
 
+  neo_commerce.simple_layout:
+    class: Drupal\neo_commerce\Cart\SimpleLayout
+    arguments:
+      - '@neo_commerce.settings'
+      - '@neo_commerce.cart_copy'
+      - '@neo_commerce.cart_page_builder'
+      - '@string_translation'
+
+  Drupal\neo_commerce\Hook\PageHooks:
+    class: Drupal\neo_commerce\Hook\PageHooks
+    arguments:
+      - '@neo_commerce.simple_layout'
+      - '@current_route_match'
+
   Drupal\neo_commerce\Hook\ProductHooks:
     class: Drupal\neo_commerce\Hook\ProductHooks
     arguments:

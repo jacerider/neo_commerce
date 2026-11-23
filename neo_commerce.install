@@ -127,3 +127,17 @@ function neo_commerce_update_10003(): string {
   }
   return 'Cart page components ' . implode(', ', $report) . '.';
 }
+
+/**
+ * Adds the simple page layout settings, both off.
+ */
+function neo_commerce_update_10004(): string {
+  $config = \Drupal::configFactory()->getEditable('neo_commerce.settings');
+  foreach (['simple_layout_cart', 'simple_layout_checkout'] as $key) {
+    if ($config->get($key) === NULL) {
+      $config->set($key, FALSE);
+    }
+  }
+  $config->save();
+  return 'Added the simple page layout settings, off.';
+}

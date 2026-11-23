@@ -136,6 +136,12 @@ neo_commerce:
     cart_overview_thumbnail_limit:
       type: integer
       label: 'Thumbnails per cart on the overview'
+    simple_layout_cart:
+      type: boolean
+      label: 'Simple page layout on cart pages'
+    simple_layout_checkout:
+      type: boolean
+      label: 'Simple page layout during checkout'
     cart_explainer:
       type: text
       label: 'Explainer shown when a shopper has more than one cart'

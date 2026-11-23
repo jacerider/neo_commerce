@@ -250,6 +250,9 @@ class CartCopy {
    *   The label.
    */
   protected function orderTypeLabel(string $orderTypeId): string {
+    if ($orderTypeId === '') {
+      return '';
+    }
     $type = $this->entityTypeManager
       ->getStorage('commerce_order_type')
       ->load($orderTypeId);

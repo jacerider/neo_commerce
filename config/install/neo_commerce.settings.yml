@@ -39,6 +39,8 @@ cart_line_component: 'neo_commerce:cart_line'
 cart_quantity_instant: true
 cart_overview_thumbnail_limit: 8
 cart_explainer: ''
+simple_layout_cart: false
+simple_layout_checkout: false
 cart_copy:
   kicker: ''
   title: 'Your cart'

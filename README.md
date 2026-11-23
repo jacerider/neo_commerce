@@ -191,6 +191,15 @@ overridden per order type; an empty per-type field falls back to the
 default. The overview has its own copy, and an explainer shows when a
 shopper has more than one cart.
 
+### Simple page layout
+
+**Simple page layout on cart pages** and **during checkout** (Cart page tab,
+both off by default) swap the site header and footer for a bar holding the
+logo and one back link: continue shopping on the cart, back to the cart
+during checkout. The template is neo_base's `page--simple.html.twig`;
+override it in your theme to restyle the bar. Needs a neo_base based theme,
+or any theme providing `page--simple.html.twig`.
+
 ## What a theme copy must keep
 
 `cart_quick` is copied into the theme and yours to restyle, with two rules:

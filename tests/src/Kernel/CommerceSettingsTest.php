@@ -108,6 +108,8 @@ class CommerceSettingsTest extends CartKernelTestBase {
       'cart_quantity_instant',
       'cart_overview_thumbnail_limit',
       'cart_explainer',
+      'simple_layout_cart',
+      'simple_layout_checkout',
       'cart_copy',
       'cart_copy_types',
       'cart_overview',
