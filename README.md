@@ -157,6 +157,40 @@ Nothing looks up a block entity, which is what makes this work on a site
 that does not build its front end from block layout — and it is why the
 page, not the server, is the one thing that knows which summaries exist.
 
+## The cart page
+
+`/cart` is Commerce's route, pointed at neo_commerce's controller:
+
+- one cart with something in it: that cart's page, in place;
+- two or more (a shopper holds one cart per order type and store): the
+  **cart overview**, one card per cart, each linking to `/cart/{order}`;
+- none: the overview's empty state.
+
+`/cart/{order}` is one cart's page, open only to the shopper whose cart it
+is. A cart's page links back to `/cart` when the shopper has other carts.
+
+A cart's page is still Commerce's cart form. neo_commerce renders it through
+the `cart_page` component (one `cart_line` per order item) instead of the
+view's table, but the quantity fields, remove buttons, update and checkout
+buttons stay the form's own elements, placed into the component through the
+same placeholders Views uses for its form fields. Every Commerce submit
+handler, the ajax update and any other module's cart form alter keep working.
+
+In the cart modal the same components render **compact**: no page head, one
+column, the summary under the lines. A dialog request picks it, and a hidden
+form value keeps it across the cart's own updates. After an add, the modal
+opens the cart the item went into.
+
+With **Apply quantity changes immediately** on (the default), plus, minus
+and typed quantities update the cart without the update button, which is
+then hidden visually but stays in the form.
+
+The copy (kicker, title, intro, notice, footnote, checkout label, continue
+link, empty state) is set once on the **Cart page** tab and can be
+overridden per order type; an empty per-type field falls back to the
+default. The overview has its own copy, and an explainer shows when a
+shopper has more than one cart.
+
 ## What a theme copy must keep
 
 `cart_quick` is copied into the theme and yours to restyle, with two rules:
@@ -165,7 +199,15 @@ page, not the server, is the one thing that knows which summaries exist.
 - `link_attributes` printed on the link, or clicking the cart navigates to
   `/cart` instead of opening the shelf.
 
-Both fail silently, which is why they are called out here and in the twig.
+`cart_page`, `cart_line` and `cart_overview` are copied in too. In
+`cart_page` and `cart_line`, print every slot once: `lines`, `quantity`,
+`remove`, `checkout` and `update` carry the cart form's own elements, so a
+slot left out removes that control and one printed twice works only once.
+Never delete `update`; with instant quantities it is the submit the
+quantity controls press.
+
+All of these fail silently, which is why they are called out here and in
+the twig.
 
 ## Settings
 

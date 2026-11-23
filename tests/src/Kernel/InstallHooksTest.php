@@ -120,6 +120,25 @@ class InstallHooksTest extends CartKernelTestBase {
   }
 
   /**
+   * Tests that the cart page components are handed to the theme too.
+   */
+  public function testClaimsTheCartPageComponents(): void {
+    $results = $this->hooks()->claimCartPageComponents();
+
+    foreach (InstallHooks::CART_PAGE_COMPONENTS as $key => $default) {
+      $name = explode(':', $default)[1];
+      $this->assertSame('claimed', $results[$key]);
+      $this->assertSame(
+        self::THEME . ':' . $name,
+        $this->config('neo_commerce.settings')->get($key)
+      );
+      $this->assertFileExists(
+        $this->target . '/' . $name . '/' . $name . '.component.yml'
+      );
+    }
+  }
+
+  /**
    * Tests that a component a site builder already chose is left alone.
    *
    * Both hooks can fire on one request and both fire again on the next

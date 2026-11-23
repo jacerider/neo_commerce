@@ -29,6 +29,15 @@ class InstallHooks {
   const DEFAULT_CARD_COMPONENT = 'neo_commerce:product_card';
 
   /**
+   * The cart page components, keyed by the setting that names each one.
+   */
+  const CART_PAGE_COMPONENTS = [
+    'cart_page_component' => 'neo_commerce:cart_page',
+    'cart_line_component' => 'neo_commerce:cart_line',
+    'cart_overview_component' => 'neo_commerce:cart_overview',
+  ];
+
+  /**
    * Constructs the hook handler.
    *
    * @param \Drupal\neo_alchemist\ThemeComponentInstaller $installer
@@ -64,6 +73,27 @@ class InstallHooks {
   }
 
   /**
+   * Repoints the cart page components at the theme's own copies.
+   *
+   * Public for neo_commerce_update_10003(), which hands the components to
+   * sites that installed the module before they existed.
+   *
+   * @return string[]
+   *   The claim result per setting key: claimed, kept or unavailable.
+   */
+  public function claimCartPageComponents(): array {
+    $results = [];
+    foreach (self::CART_PAGE_COMPONENTS as $key => $default) {
+      $results[$key] = $this->installer->claimComponent(
+        $default,
+        'neo_commerce.settings',
+        $key,
+      );
+    }
+    return $results;
+  }
+
+  /**
    * Repoints the cart block and product card at the theme's own copies.
    *
    * The claim sweeps, resolves the theme and only ever upgrades the shipped
@@ -81,6 +111,7 @@ class InstallHooks {
       'neo_commerce.settings',
       'product_card_component',
     );
+    $this->claimCartPageComponents();
   }
 
 }

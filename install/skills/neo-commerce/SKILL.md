@@ -1,6 +1,6 @@
 ---
 name: neo-commerce
-description: Configure and extend neo_commerce — the ajax cart for Drupal Commerce on Neo. Use when asked to add or tune ajax add-to-cart, open the cart in a modal or shelf after adding, place or restyle the cart summary block (the cart_quick SDC), change cart button labels ("Update cart", "Checkout") or the remove/quantity controls, make the cart form update without a page reload, refresh the cart count from your own ajax response, add or scope a neo_commerce settings variation, subscribe to AddToCartCleanKeysEvent / AddToCartResponseEvent / CartFormAlterEvent, or debug why a cart count will not update or an add-to-cart validation error is not announced. Also covers laying out products with Alchemist: binding props to the selected variation (variations > field), the product_variation_field slot, and marked re-render on variation change. NOT for the checkout flow or payment gateways, and NOT for authoring page-building components (use neo-component).
+description: Configure and extend neo_commerce: the ajax cart for Drupal Commerce on Neo. Use when asked to add or tune ajax add-to-cart, open the cart in a modal or shelf after adding, place or restyle the cart summary block (the cart_quick SDC), restyle or reword the /cart page (the cart_page, cart_line and cart_overview SDCs, cart copy per order type, the multi-cart overview, /cart/{order}, the compact cart in the modal, instant quantity updates), change cart button labels ("Update cart", "Checkout") or the remove/quantity controls, make the cart form update without a page reload, refresh the cart count from your own ajax response, add or scope a neo_commerce settings variation, subscribe to AddToCartCleanKeysEvent / AddToCartResponseEvent / CartFormAlterEvent, or debug why a cart count will not update or an add-to-cart validation error is not announced. Also covers laying out products with Alchemist: binding props to the selected variation (variations > field), the product_variation_field slot, and marked re-render on variation change. NOT for the checkout flow or payment gateways, and NOT for authoring page-building components (use neo-component).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
@@ -23,6 +23,44 @@ Module: [web/modules/contrib/neo_commerce/](web/modules/contrib/neo_commerce/)
 - **[src/Cart/CartFormAlter.php](web/modules/contrib/neo_commerce/src/Cart/CartFormAlter.php)** —
   plus/minus quantities, an icon remove button, ajax update, configured
   labels. One wrapper per cart, keyed on the order id.
+- **[src/Cart/CartPageBuilder.php](web/modules/contrib/neo_commerce/src/Cart/CartPageBuilder.php)** +
+  **[components/cart_page/](web/modules/contrib/neo_commerce/components/cart_page/)**,
+  **[cart_line/](web/modules/contrib/neo_commerce/components/cart_line/)**,
+  **[cart_overview/](web/modules/contrib/neo_commerce/components/cart_overview/)**:
+  the cart page. `CartFormAlter::renderAsPage()` swaps the cart form view's
+  output for `CartPageBuilder::build()`. The quantity, remove, update and
+  checkout elements never move in the form array: their Views form
+  placeholders (`<!--form-item-edit_quantity--0-->`) travel into component
+  slots as `['#markup' => Markup]` and `ViewsFormMainForm::preRenderViewsForm()`
+  swaps them for the rendered elements. Update and checkout are appended to
+  `$form['#substitutions']` so they print in the summary.
+  `show_view_elements` is set FALSE so the view footer's order total does
+  not print twice. Lines read `product_image_field` / `product_tagline_field`
+  from the variation, else the product (`src/Product/ImageDataTrait.php`,
+  shared with the product card).
+- **[src/Controller/CartPageController.php](web/modules/contrib/neo_commerce/src/Controller/CartPageController.php)**:
+  `/cart` (Commerce's route, controller swapped by
+  `src/Routing/RouteSubscriber.php`): one non-empty cart renders its page,
+  two or more the overview, none the overview's empty state.
+  `/cart/{commerce_order}` (`neo_commerce.cart_order`) is one cart, access
+  limited to the shopper's own carts via the cart provider.
+- **[src/Cart/CartCopy.php](web/modules/contrib/neo_commerce/src/Cart/CartCopy.php)**:
+  resolves `cart_copy` (defaults) + `cart_copy_types.<order type>`
+  (overrides; empty falls back), `cart_overview` and `cart_explainer`.
+  Links come back as `Url`, the notice and explainer filtered to
+  strong/em/a/br. `cart_copy_types` is a strict parent in
+  `CommerceSettings` or a new order type's copy is dropped on save.
+- **Compact cart**: `CartModal::isCompactRequest()` is TRUE for a dialog
+  request or a post carrying the hidden `neo_cart_compact` value the compact
+  cart form prints, so the modal's own ajax updates stay compact. After an
+  add the modal opens `/cart/{cart_id}`.
+- **Instant quantities** (`cart_quantity_instant`, `src/js/cart/instant.ts`):
+  `CartFormAlter::markInstantQuantities()` prints `data-neo-cart-instant`,
+  `data-neo-cart-order` (the stable key; ids gain an ajax suffix),
+  `.neo-commerce-cart-quantity` and `.neo-commerce-cart-update` (with
+  `data-disable-refocus`). The script presses the update button through
+  its Drupal.ajax instance, one request at a time, and re-sends changes made
+  mid-request once the new form attaches.
 - **[src/Ajax/CartResponseBuilder.php](web/modules/contrib/neo_commerce/src/Ajax/CartResponseBuilder.php)** —
   both responses. Error path: ARIA wiring, summary, focus, messenger flush.
   Success path: cart refresh, then the modal.
@@ -194,6 +232,18 @@ slots:
             variation: ''
 ```
 
+### Restyle or reword the cart page
+
+Words: `/admin/config/neo/commerce`, **Cart page** tab. Set the cart copy
+once; open an order type's section only to override a field for that type.
+Markup: the theme copies at `<theme>/components/cart_page/`, `cart_line/`
+and `cart_overview/`. Print every slot once (`lines`, `quantity`,
+`remove`, `checkout`, `update`): they carry the cart form's own elements.
+Hide the theme's page title block on `commerce_cart.page` and
+`neo_commerce.cart_order`, since `cart_page` prints the H1 (`title_tag`).
+Restyle the compact variant through the `compact` prop, not a second
+component.
+
 ### Restyle the summary
 
 Edit the theme's copy at `<theme>/components/cart_quick/`, keep
@@ -284,6 +334,12 @@ image once. Its next/prev listeners sit on the inner `<a>` of
 | Button label unchanged | it is `#value` on a `#type => submit`, never `#title` |
 | "Adding to cart…" never appears | use `#disabled_on_click`; writing `data-neo-disable-message` by hand skips the `neo/disable` library |
 | Checkout button ignores a submit handler | `commerce_checkout` snapshots `$form['#submit']` when its own alter runs; this module is ordered after it on purpose |
+| A cart control is missing from the cart page | the theme copy of `cart_page` / `cart_line` dropped a slot; the slots carry the form's own elements |
+| Cart page shows the totals twice | something reset `show_view_elements`; the view footer's order total is printing beside the component's summary |
+| Quantity changes need the update button | `cart_quantity_instant` off, or the form lost `data-neo-cart-instant` (no `edit_quantity` or no `actions.submit`) |
+| Cart in the modal turns full-page after a change | the hidden `neo_cart_compact` value is missing from the posted form |
+| `/cart/{id}` is 403 | the order is not one of the current shopper's carts (placed, or someone else's) |
+| A new order type's cart copy does not save | `cart_copy_types` is no longer a strict parent in `CommerceSettings` |
 | Errors announced but unexplained | the inline message needs its id, which `ThemeHooks::preprocessFormElement()` wraps around the rendered content |
 
 ## Files
@@ -296,5 +352,9 @@ image once. Its next/prev listeners sit on the inner `<a>` of
 | `src/Plugin/Field/FieldWidget/QuantityPlusMinusWidget.php` | `quantity_plus_minus`, moved here from `neo` keeping its id |
 | `src/js/cart/guard.ts` | wraps `Drupal.Ajax.prototype` once at load, never in `attach()` |
 | `src/js/cart/report.ts` | the cart report: collects the page's `data-neo-cart` values at request time and sends them as `neo_cart[]`; wrapped once at load, beside the guard |
+| `src/js/cart/instant.ts` | instant quantities: delegated listeners installed once, plus a per-form `once()` attach that resumes and restores focus |
+| `tests/src/Kernel/CartPageControllerTest.php` | /cart dispatch, overview cards, thumbnail cap, back link, cart access |
+| `tests/src/Kernel/CartCopyTest.php` | per-type copy fallbacks, link and markup filtering |
+| `tests/src/Nightwatch/Tests/instantQuantityTest.js` | instant plus and zero-plus-Enter against the running site |
 | `tests/src/Unit/AjaxFormErrorsTest.php` | the ARIA walker |
 | `tests/src/Kernel/` | settings schema, cart summary build and cacheability |

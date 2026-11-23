@@ -5,6 +5,8 @@
  * Install and update hooks for neo_commerce.
  */
 
+use Drupal\neo_commerce\Hook\InstallHooks;
+
 /**
  * Removes the product_card_image_style setting.
  *
@@ -96,4 +98,32 @@ function neo_commerce_update_10002(): string {
   return $added
     ? sprintf('Added cart page settings: %s.', implode(', ', $added))
     : 'Cart page settings already present.';
+}
+
+/**
+ * Copies the cart page components into the theme and points the cart at them.
+ *
+ * The cart page, cart line and cart overview components replace the cart
+ * form's table. Like the cart summary, the theme owns its copies: this puts
+ * them in the front theme and names them in the settings, unless a site has
+ * already chosen components of its own. Strip `neo_install: true` from the
+ * copies afterwards, as for cart_quick.
+ */
+function neo_commerce_update_10003(): string {
+  $config = \Drupal::configFactory()->getEditable('neo_commerce.settings');
+  // A key the config never stored would read as a site's own choice and be
+  // kept, so start it at the shipped default.
+  foreach (InstallHooks::CART_PAGE_COMPONENTS as $key => $default) {
+    if ($config->get($key) === NULL) {
+      $config->set($key, $default);
+    }
+  }
+  $config->save();
+
+  $results = \Drupal::service(InstallHooks::class)->claimCartPageComponents();
+  $report = [];
+  foreach ($results as $key => $result) {
+    $report[] = $key . ': ' . $result;
+  }
+  return 'Cart page components ' . implode(', ', $report) . '.';
 }

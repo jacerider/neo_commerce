@@ -31,6 +31,25 @@ chosen explicitly by id on the cart block and never by condition. _Avoid:_ profi
 pointing at the module's own `cart_quick` and is handed to neo_alchemist's *component claim*
 on install, so a site edits its theme copy. _Avoid:_ cart template, summary component.
 
+**Cart page**: one cart, as the `cart_page` component renders it around Commerce's cart
+form: page head, lines, order summary. At `/cart` when the shopper has one cart, and at
+`/cart/{order}`. _Avoid:_ cart detail, cart form page.
+
+**Cart overview**: the `cart_overview` component at `/cart` when the shopper holds more
+than one cart: one card per cart, linking to its cart page. Also the empty state when no
+cart holds anything. _Avoid:_ basket page, multi-cart page.
+
+**Cart copy**: the words a cart page prints, set once (`cart_copy`) and overridden per
+order type (`cart_copy_types`), where an empty value falls back to the default. Resolved by
+`CartCopy`. _Avoid:_ cart labels, cart text.
+
+**Compact cart**: the cart page or overview in the cart modal: no page head, one column.
+Chosen by a dialog request and carried across the cart's own updates by the
+`neo_cart_compact` form value. _Avoid:_ mini cart, modal cart.
+
+**Instant quantities**: quantity changes that press the cart form's update button for the
+shopper, one request at a time. _Avoid:_ auto-update, live cart.
+
 ## The ajax seam
 
 **Alter service** — the injected service that owns every behaviour of one cart form:
