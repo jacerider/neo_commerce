@@ -16,6 +16,13 @@
   display: none !important;
 }
 
+/* The page's own plain buttons, which carry no .btn class to set this. */
+[data-neo-checkout-summary-toggle],
+[data-neo-checkout-login-toggle],
+.neo-radio-cards__toggle {
+  cursor: pointer;
+}
+
 /* The message and error summary areas take no room while empty, so the
    first card lines up with the summary. */
 #neo-checkout-messages,
