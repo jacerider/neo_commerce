@@ -20,6 +20,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RenderContext;
 use Drupal\neo_commerce\Checkout\CheckoutAjaxResponseBuilder;
 use Drupal\neo_commerce\Checkout\CheckoutPage;
+use Drupal\neo_commerce\Checkout\CheckoutResponseBuilder;
 use Drupal\neo_commerce\Plugin\Commerce\CheckoutFlow\SinglePage;
 use Drupal\Tests\commerce_cart\Kernel\CartKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
@@ -538,6 +539,73 @@ class SinglePageCheckoutTest extends CartKernelTestBase {
     $this->assertSame('returning@example.com', $cart->getEmail());
     // Still on the page, not moved on to payment.
     $this->assertNotSame('payment', $cart->get('checkout_step')->value);
+  }
+
+  /**
+   * Stripe is not asked to keep a card unless the shopper ticked the box.
+   */
+  public function testCardIsKeptOnlyWhenAsked(): void {
+    $subscriber = $this->container->get('neo_commerce.checkout_stripe_subscriber');
+    $event = new class($this->cart) {
+
+      /**
+       * The intent attributes.
+       *
+       * @var array
+       */
+      public array $attributes = ['amount' => 1000, 'setup_future_usage' => 'off_session'];
+
+      public function __construct(protected $order) {}
+
+      /**
+       * Returns the order.
+       */
+      public function getOrder() {
+        return $this->order;
+      }
+
+      /**
+       * Returns the attributes.
+       */
+      public function getIntentAttributes(): array {
+        return $this->attributes;
+      }
+
+      /**
+       * Sets the attributes.
+       */
+      public function setIntentAttributes(array $attributes): void {
+        $this->attributes = $attributes;
+      }
+
+    };
+
+    $subscriber->onIntentCreate($event);
+    $this->assertArrayNotHasKey('setup_future_usage', $event->attributes);
+
+    $event->attributes['setup_future_usage'] = 'off_session';
+    $this->cart->setData(CheckoutResponseBuilder::SAVE_CARD, TRUE);
+    $subscriber->onIntentCreate($event);
+    $this->assertSame('off_session', $event->attributes['setup_future_usage']);
+
+    // Other flows keep the gateway's own behaviour.
+    $this->cart->setData(CheckoutResponseBuilder::SAVE_CARD, FALSE);
+    $this->cart->set('checkout_flow', NULL);
+    $subscriber->onIntentCreate($event);
+    $this->assertSame('off_session', $event->attributes['setup_future_usage']);
+  }
+
+  /**
+   * Guests are never offered to keep a card.
+   */
+  public function testNoSaveCardForGuests(): void {
+    $form = ['stripe_review' => []];
+    $this->container->get('neo_commerce.checkout_response')
+      ->addSaveCard($form, $this->cart);
+    $this->assertArrayNotHasKey(
+      CheckoutResponseBuilder::SAVE_CARD,
+      $form['stripe_review']
+    );
   }
 
   /**

@@ -241,6 +241,7 @@ class SinglePage extends CheckoutFlowWithPanesBase {
     ];
 
     $this->responseBuilder->adoptStripe($form, $this->getOrder());
+    $this->responseBuilder->addSaveCard($form, $this->getOrder());
     $this->page->decorate(
       $form,
       $this->getOrder(),
@@ -272,6 +273,16 @@ class SinglePage extends CheckoutFlowWithPanesBase {
           $pane->submitPaneForm($form['sidebar'][$pane_id], $form_state, $form);
         }
       }
+    }
+    $saveCard = $form_state->getValue([
+      'stripe_review',
+      CheckoutResponseBuilder::SAVE_CARD,
+    ]);
+    if ($saveCard !== NULL) {
+      $form_state->set(
+        'neo_checkout_intent_changed',
+        $this->responseBuilder->applySaveCard($this->getOrder(), (bool) $saveCard)
+      );
     }
     $this->getOrder()->save();
     // Rebuilding reloads the order, so the response reads what was saved.

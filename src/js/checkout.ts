@@ -15,6 +15,7 @@
 type SaveResult = {
   valid: boolean;
   balance: string;
+  refresh: boolean;
 };
 
 type Pending = {
@@ -90,7 +91,7 @@ const save = (form: HTMLFormElement): Promise<SaveResult> => {
 
   commands.neoCheckoutSaved = (
     ajax: AjaxInstance,
-    response: { valid: boolean; balance: string },
+    response: { valid: boolean; balance: string; refresh?: boolean },
   ) => {
     const form = (ajax.element as HTMLButtonElement | undefined)?.form;
     if (!form) {
@@ -98,7 +99,11 @@ const save = (form: HTMLFormElement): Promise<SaveResult> => {
     }
     const waiting = pending.get(form);
     pending.delete(form);
-    waiting?.resolve({ valid: response.valid, balance: response.balance });
+    waiting?.resolve({
+      valid: response.valid,
+      balance: response.balance,
+      refresh: !!response.refresh,
+    });
   };
 
   (Drupal as unknown as Record<string, unknown>).neoCommerceCheckout = { save };

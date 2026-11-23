@@ -59,7 +59,16 @@ services:
       - '@messenger'
       - '@string_translation'
       - '@neo_commerce.checkout_page'
+      - '@neo_commerce.settings'
+      - '@current_user'
       - '@?commerce_payment.options_builder'
+
+  neo_commerce.checkout_stripe_subscriber:
+    class: Drupal\neo_commerce\EventSubscriber\CheckoutStripeSubscriber
+    arguments:
+      - '@neo_commerce.checkout_response'
+    tags:
+      - { name: event_subscriber }
 
   neo_commerce.checkout_ajax_response:
     class: Drupal\neo_commerce\Checkout\CheckoutAjaxResponseBuilder

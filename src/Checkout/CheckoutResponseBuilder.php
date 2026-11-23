@@ -16,11 +16,14 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\neo_commerce\Ajax\CheckoutSavedCommand;
 use Drupal\neo_commerce\Form\AjaxFormErrors;
 use Drupal\neo_commerce\Plugin\Commerce\CheckoutFlow\SinglePage;
+use Drupal\neo_settings\SettingsRepositoryInterface;
+use Stripe\PaymentIntent;
 
 /**
  * The server side of the single-page checkout.
@@ -43,6 +46,23 @@ class CheckoutResponseBuilder {
   public const NEO_STRIPE_SETTINGS = 'neoCommerceStripe';
 
   /**
+   * The order data key, and form element, for "Save this card".
+   */
+  public const SAVE_CARD = 'neo_save_card';
+
+  /**
+   * Stripe Appearance API variables a site can set, by setting key.
+   */
+  public const STRIPE_APPEARANCE = [
+    'font_family' => 'fontFamily',
+    'color_primary' => 'colorPrimary',
+    'color_background' => 'colorBackground',
+    'color_text' => 'colorText',
+    'color_danger' => 'colorDanger',
+    'border_radius' => 'borderRadius',
+  ];
+
+  /**
    * Constructs the builder.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
@@ -53,6 +73,10 @@ class CheckoutResponseBuilder {
    *   The string translation service.
    * @param \Drupal\neo_commerce\Checkout\CheckoutPage $page
    *   The checkout page layout, for the formatted total.
+   * @param \Drupal\neo_settings\SettingsRepositoryInterface $settings
+   *   The neo_commerce settings repository.
+   * @param \Drupal\Core\Session\AccountInterface $currentUser
+   *   The current user.
    * @param object|null $paymentOptionsBuilder
    *   Commerce Payment's options builder, NULL without commerce_payment.
    */
@@ -61,6 +85,8 @@ class CheckoutResponseBuilder {
     protected MessengerInterface $messenger,
     TranslationInterface $translation,
     protected CheckoutPage $page,
+    protected SettingsRepositoryInterface $settings,
+    protected AccountInterface $currentUser,
     protected ?object $paymentOptionsBuilder = NULL,
   ) {
     $this->setStringTranslation($translation);
@@ -171,9 +197,136 @@ class CheckoutResponseBuilder {
       $attached['drupalSettings'][self::NEO_STRIPE_SETTINGS] =
         $attached['drupalSettings'][self::STRIPE_SETTINGS];
       unset($attached['drupalSettings'][self::STRIPE_SETTINGS]);
-      $attached['drupalSettings'][self::NEO_STRIPE_SETTINGS]['balance'] =
-        $this->balance($order);
+      $neo = &$attached['drupalSettings'][self::NEO_STRIPE_SETTINGS];
+      $neo['balance'] = $this->balance($order);
+      $this->applyAppearance($neo);
     }
+  }
+
+  /**
+   * Styles Stripe's card form from the site's settings.
+   *
+   * The Payment Element is an iframe, so the theme's CSS cannot reach it.
+   * Stripe takes a few design values instead (the Appearance API), set on
+   * the Checkout tab. An empty value keeps Stripe's own.
+   *
+   * @param array $settings
+   *   The Stripe settings for the page script.
+   */
+  protected function applyAppearance(array &$settings): void {
+    $values = (array) $this->settings->getActive()
+      ->getValue('checkout_stripe_appearance');
+    $variables = [];
+    foreach (self::STRIPE_APPEARANCE as $key => $variable) {
+      $value = trim((string) ($values[$key] ?? ''));
+      if ($value !== '') {
+        $variables[$variable] = $value;
+      }
+    }
+    if ($variables) {
+      $settings['createElementsOptions']['appearance']['variables'] =
+        $variables + (array) (
+          $settings['createElementsOptions']['appearance']['variables'] ?? []
+        );
+    }
+    $fonts = trim((string) ($values['fonts_css'] ?? ''));
+    if ($fonts !== '') {
+      $settings['createElementsOptions']['fonts'] = [['cssSrc' => $fonts]];
+    }
+  }
+
+  /**
+   * Whether an order checks out on the single-page flow.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
+   *
+   * @return bool
+   *   TRUE for the neo_single_page flow.
+   */
+  public function isSinglePage(OrderInterface $order): bool {
+    if (!$order->hasField('checkout_flow')) {
+      return FALSE;
+    }
+    $flow = $order->get('checkout_flow')->entity;
+    return $flow && $flow->getPluginId() === 'neo_single_page';
+  }
+
+  /**
+   * Adds "Save this card" under the gateway's card form.
+   *
+   * Only for a signed-in shopper paying with a new card through a gateway
+   * that can keep it. A guest has no account to keep it on.
+   *
+   * @param array $form
+   *   The checkout form.
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
+   */
+  public function addSaveCard(array &$form, OrderInterface $order): void {
+    if (
+      !isset($form['stripe_review']) ||
+      $this->currentUser->isAnonymous() ||
+      !$order->get('payment_method')->isEmpty() ||
+      !$this->gatewayKeepsCards($order)
+    ) {
+      return;
+    }
+    $form['stripe_review'][self::SAVE_CARD] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Save this card to my account for faster checkout.'),
+      '#default_value' => (bool) $order->getData(self::SAVE_CARD),
+      '#weight' => 100,
+    ];
+  }
+
+  /**
+   * Stores the "Save this card" choice on the order and on its intent.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order, saved by the caller.
+   * @param bool $save
+   *   Whether the shopper ticked the box.
+   *
+   * @return bool
+   *   TRUE when the intent changed and the card form must fetch it again.
+   */
+  public function applySaveCard(OrderInterface $order, bool $save): bool {
+    if ((bool) $order->getData(self::SAVE_CARD) === $save) {
+      return FALSE;
+    }
+    $order->setData(self::SAVE_CARD, $save);
+    $intentId = $order->getData('stripe_intent');
+    $plugin = $order->get('payment_gateway')->entity?->getPlugin();
+    if (
+      !$intentId ||
+      !$plugin ||
+      !method_exists($plugin, 'getPaymentMethodUsage') ||
+      !class_exists(PaymentIntent::class)
+    ) {
+      return FALSE;
+    }
+    // An empty string is how Stripe clears setup_future_usage.
+    PaymentIntent::update($intentId, [
+      'setup_future_usage' => $save ? $plugin->getPaymentMethodUsage() : '',
+    ]);
+    return TRUE;
+  }
+
+  /**
+   * Whether the order's gateway keeps cards for later.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
+   *
+   * @return bool
+   *   TRUE for a gateway configured to reuse payment methods.
+   */
+  protected function gatewayKeepsCards(OrderInterface $order): bool {
+    $plugin = $order->get('payment_gateway')->entity?->getPlugin();
+    return $plugin
+      && method_exists($plugin, 'getPaymentMethodUsage')
+      && $plugin->getPaymentMethodUsage() !== 'single_use';
   }
 
   /**
@@ -213,9 +366,11 @@ class CheckoutResponseBuilder {
         new ReplaceCommand($summary, $form['neo_error_summary'])
       );
       $this->addSummaryCommands($response, $form, $order);
-      $response->addCommand(
-        new CheckoutSavedCommand(TRUE, $this->balance($order))
-      );
+      $response->addCommand(new CheckoutSavedCommand(
+        TRUE,
+        $this->balance($order),
+        (bool) $formState->get('neo_checkout_intent_changed')
+      ));
       return $response;
     }
 

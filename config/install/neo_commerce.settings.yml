@@ -66,6 +66,14 @@ checkout_copy:
   place_order_label: 'Place order'
   secure_note: 'Encrypted & secure'
 checkout_copy_types: {  }
+checkout_stripe_appearance:
+  font_family: ''
+  fonts_css: ''
+  color_primary: ''
+  color_background: ''
+  color_text: ''
+  color_danger: ''
+  border_radius: ''
 cart_overview:
   kicker: ''
   title: 'Your cart'

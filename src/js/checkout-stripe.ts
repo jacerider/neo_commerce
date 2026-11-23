@@ -37,7 +37,11 @@ type StripeSettings = {
 };
 
 type CheckoutApi = {
-  save(form: HTMLFormElement): Promise<{ valid: boolean; balance: string }>;
+  save(form: HTMLFormElement): Promise<{
+    valid: boolean;
+    balance: string;
+    refresh: boolean;
+  }>;
 };
 
 const showError = (message: string): void => {
@@ -107,7 +111,7 @@ const onSubmit = async (event: SubmitEvent): Promise<void> => {
       fail(checked.error?.message);
       return;
     }
-    if (elements && saved.balance !== current.balance) {
+    if (elements && (saved.refresh || saved.balance !== current.balance)) {
       await elements.fetchUpdates();
       current.balance = saved.balance;
     }

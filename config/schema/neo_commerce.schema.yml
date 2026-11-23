@@ -166,6 +166,31 @@ neo_commerce:
       sequence:
         type: neo_commerce.checkout_copy
         label: 'Copy for one order type'
+    checkout_stripe_appearance:
+      type: mapping
+      label: 'Stripe card form appearance'
+      mapping:
+        font_family:
+          type: string
+          label: 'Font family'
+        fonts_css:
+          type: string
+          label: 'Font stylesheet URL'
+        color_primary:
+          type: string
+          label: 'Primary colour'
+        color_background:
+          type: string
+          label: 'Background colour'
+        color_text:
+          type: string
+          label: 'Text colour'
+        color_danger:
+          type: string
+          label: 'Error colour'
+        border_radius:
+          type: string
+          label: 'Border radius'
     cart_overview:
       type: mapping
       label: 'Cart overview copy'

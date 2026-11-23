@@ -176,3 +176,22 @@ function neo_commerce_update_10005(): string {
   return 'Checkout page component: '
     . ($results['checkout_page_component'] ?? 'unavailable') . '.';
 }
+
+/**
+ * Adds the Stripe card form appearance settings, all empty.
+ */
+function neo_commerce_update_10006(): string {
+  $config = \Drupal::configFactory()->getEditable('neo_commerce.settings');
+  if ($config->get('checkout_stripe_appearance') === NULL) {
+    $config->set('checkout_stripe_appearance', [
+      'font_family' => '',
+      'fonts_css' => '',
+      'color_primary' => '',
+      'color_background' => '',
+      'color_text' => '',
+      'color_danger' => '',
+      'border_radius' => '',
+    ])->save();
+  }
+  return 'Added the Stripe card form appearance settings.';
+}

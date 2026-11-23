@@ -22,10 +22,14 @@ class CheckoutSavedCommand implements CommandInterface {
    * @param string $balance
    *   The order balance after the save, as a decimal string, so the script
    *   can tell whether the amount to charge changed. Empty when unknown.
+   * @param bool $refresh
+   *   Whether the gateway's intent changed in other ways (saving the card),
+   *   so the card form must fetch it again before confirming.
    */
   public function __construct(
     protected bool $valid,
     protected string $balance = '',
+    protected bool $refresh = FALSE,
   ) {}
 
   /**
@@ -36,6 +40,7 @@ class CheckoutSavedCommand implements CommandInterface {
       'command' => 'neoCheckoutSaved',
       'valid' => $this->valid,
       'balance' => $this->balance,
+      'refresh' => $this->refresh,
     ];
   }
 

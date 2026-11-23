@@ -470,6 +470,37 @@ class CommerceSettings extends SettingsBase {
       '#open' => TRUE,
     ];
 
+    $appearance = (array) $this->getValue('checkout_stripe_appearance');
+    $page['checkout_stripe_appearance'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Stripe card form'),
+      '#description' => $this->t("Stripe draws its card form in its own frame, which the theme cannot style. These values are passed to it instead. Leave a field empty to keep Stripe's own."),
+    ];
+    $fields = [
+      'font_family' => [$this->t('Font family'), $this->t('Such as "Montserrat, sans-serif".')],
+      'fonts_css' => [
+        $this->t('Font stylesheet URL'),
+        $this->t('A Google Fonts CSS URL, needed for any font that is not a system font.'),
+      ],
+      'color_primary' => [
+        $this->t('Primary colour'),
+        $this->t('Focus rings and the selected tab, as a hex value.'),
+      ],
+      'color_background' => [$this->t('Background colour'), NULL],
+      'color_text' => [$this->t('Text colour'), NULL],
+      'color_danger' => [$this->t('Error colour'), NULL],
+      'border_radius' => [$this->t('Border radius'), $this->t('Such as "0px" or "4px".')],
+    ];
+    foreach ($fields as $key => [$title, $description]) {
+      $page['checkout_stripe_appearance'][$key] = [
+        '#type' => 'textfield',
+        '#title' => $title,
+        '#description' => $description,
+        '#parents' => array_merge($parents, ['checkout_stripe_appearance', $key]),
+        '#default_value' => $appearance[$key] ?? '',
+      ];
+    }
+
     $types = (array) $this->getValue('checkout_copy_types');
     $orderTypes = \Drupal::entityTypeManager()
       ->getStorage('commerce_order_type')
